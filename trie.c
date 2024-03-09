@@ -1,18 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "trie.h"
 
-
-
-struct trie_node {
-    char letter;
-    struct linked_list* children;
-    struct trie_node* next;
-    int is_end_of_word;
-};
-
-struct linked_list {
-    struct trie_node* start;
-};
 
 
 /*
@@ -28,6 +17,7 @@ struct trie_node* create_trie_node(char letter){
     new_node->next = NULL;
     new_node->is_end_of_word = 0;
     new_node->children = NULL;
+    //new_node->tokenType = NULL;
     return new_node;
 }
 
@@ -80,6 +70,7 @@ void insert_word(struct trie_node* root, char* word){
         }
         current = letter;
     }
+    //current->tokenType = tokenType;
     current->is_end_of_word = 1;
 }
 
@@ -87,11 +78,11 @@ int find_word(struct trie_node* root, char* word){
     struct trie_node* current = root;
     for(int i = 0; word[i] != '\0'; i++){
         if(current->children == NULL){
-            return 0;
+            return NULL;
         }
         struct trie_node* letter = find_letter_on_list(current->children, word[i]);
         if(letter == NULL){
-            return 0;
+            return NULL;
         }
         current = letter;
     }
@@ -118,7 +109,7 @@ void print_trie(struct trie_node* root, int level){
     }
 }
 
-
+/*
 int main(){
     struct trie_node* root = create_trie_node('\0');
     insert_word(root, "hello");
@@ -139,3 +130,4 @@ int main(){
     print_trie(root, 0);
     return 0;
 }
+*/

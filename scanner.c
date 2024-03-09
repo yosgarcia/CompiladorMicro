@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
+#include "trie.h"
+
 #define MAX_WORD_SIZE 32
+
 enum TokenType
 {
     BEGIN_SYM,
@@ -22,9 +26,16 @@ enum TokenType
     ERROR_LEX
 };
 
-int is_keyword(char identifier[MAX_WORD_SIZE]){
+
+
+struct trie_node *root;
+
+int is_keyword(char *word)
+{
     return 0;
 }
+
+
 enum TokenType scanner(FILE *file)
 {
     char current_Char;
@@ -57,8 +68,41 @@ enum TokenType scanner(FILE *file)
             identifier[index] = '\0';
             ungetc(current_Char, file);
             // Creo que esta linea me la puedo clappear// Poner lo de fijarme si es keyword
+            
+            /*
+            tokenType = find_word(root, identifier);
+            switch (tokenType) {
+                case BEGIN_SYM:
+                    return BEGIN_SYM;
+                case END_SYM:
+                    return END_SYM;
+                case READ_SYM:
+                    return READ_SYM;
+                case WRITE_SYM:
+                    return WRITE_SYM;
+                default:
+                    return ID;
+            }
+            */
             if (is_keyword(identifier))
             {
+                if (!strcmp(identifier, "begin"))
+                {
+                    return BEGIN_SYM;
+                }
+                else if (!strcmp(identifier, "end"))
+                {
+                    return END_SYM;
+                }
+                else if (!strcmp(identifier, "read"))
+                {
+                    return READ_SYM;
+                }
+                else if (!strcmp(identifier, "write"))
+                {
+                    return WRITE_SYM;
+                }
+                else
                 continue; // keyword
             }
             else
@@ -130,6 +174,14 @@ enum TokenType scanner(FILE *file)
 }
 int main()
 {
+    /*
+    root = create_trie_node('\0');
+    insert_word(root, "begin", BEGIN_SYM);
+    insert_word(root, "end", END_SYM);
+    insert_word(root, "read", READ_SYM);
+    insert_word(root, "write", WRITE_SYM);
+    */
+
     FILE *file;
     char word[MAX_WORD_SIZE];
     enum TokenType tokenName;
