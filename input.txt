@@ -1,3 +1,5 @@
-hookah b  main exc ddxdxd 2332 455; +- := :L
+hookah b  main exc ddxdxd 2332 455; +- := :L read
 --fjwhfjwehfjwehfhwefjwe;
 ;;
+write begin
+end

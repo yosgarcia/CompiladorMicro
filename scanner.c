@@ -6,6 +6,7 @@
 
 #define MAX_WORD_SIZE 32
 
+/*
 enum TokenType
 {
     BEGIN_SYM,
@@ -26,14 +27,11 @@ enum TokenType
     ERROR_LEX
 };
 
-
+*/
 
 struct trie_node *root;
 
-int is_keyword(char *word)
-{
-    return 0;
-}
+
 
 
 enum TokenType scanner(FILE *file)
@@ -67,49 +65,8 @@ enum TokenType scanner(FILE *file)
             //  por ende tampoco importa xddddd
             identifier[index] = '\0';
             ungetc(current_Char, file);
-            // Creo que esta linea me la puedo clappear// Poner lo de fijarme si es keyword
             
-            /*
-            tokenType = find_word(root, identifier);
-            switch (tokenType) {
-                case BEGIN_SYM:
-                    return BEGIN_SYM;
-                case END_SYM:
-                    return END_SYM;
-                case READ_SYM:
-                    return READ_SYM;
-                case WRITE_SYM:
-                    return WRITE_SYM;
-                default:
-                    return ID;
-            }
-            */
-            if (is_keyword(identifier))
-            {
-                if (!strcmp(identifier, "begin"))
-                {
-                    return BEGIN_SYM;
-                }
-                else if (!strcmp(identifier, "end"))
-                {
-                    return END_SYM;
-                }
-                else if (!strcmp(identifier, "read"))
-                {
-                    return READ_SYM;
-                }
-                else if (!strcmp(identifier, "write"))
-                {
-                    return WRITE_SYM;
-                }
-                else
-                continue; // keyword
-            }
-            else
-            {
-                //printf("Identifier: %s\n", identifier);
-                return ID;
-            }
+            return find_word(root, identifier);
         }
         // Ver si empieza con digito
         else if (isdigit(current_Char))
@@ -172,16 +129,80 @@ enum TokenType scanner(FILE *file)
     }
     return tokenType;
 }
+
+
+
+enum TokenType scanner_v2(FILE *file) {
+    char current_Char;
+    enum TokenType tokenType = NULL_TOKEN;
+
+    while ((current_Char = fgetc(file)) != EOF) {
+        switch(current_Char) {
+            case ' ':
+            case '\t':
+            case '\n':
+                continue;
+            case '(':
+                return LPAREN;
+            case ')':
+                return RPAREN;
+            case ';':
+                return SEMI_COLON;
+            case ',':
+                return COMMA;
+            case '+':
+                return PLUS_OP;
+            case '-':
+                if ((current_Char = fgetc(file)) == '-') {
+                    while ((current_Char = fgetc(file)) != EOF && current_Char != '\n');
+                    return scanner(file);
+                }
+                ungetc(current_Char, file);
+                return MINUS_OP;
+            case ':':
+                if ((current_Char = fgetc(file)) == '=') {
+                    return ASSIGN_OP;
+                }
+                ungetc(current_Char, file);
+                return ERROR_LEX;
+            default:
+                if (isdigit(current_Char)) {
+                    while ((current_Char = fgetc(file)) != EOF && isdigit(current_Char));
+                    ungetc(current_Char, file);
+                    return INT_LITERAL;
+                } else if (isalpha(current_Char)) {
+                    char identifier[MAX_WORD_SIZE];
+                    int index = 0;
+                    identifier[index++] = current_Char;
+
+                    while ((current_Char = fgetc(file)) != EOF && isalnum(current_Char)) {
+                        identifier[index++] = current_Char;
+                    }
+
+                    identifier[index] = '\0';
+                    ungetc(current_Char, file);
+
+                    return find_word(root, identifier);
+                } else {
+                    return ERROR_LEX;
+                }
+        }
+    }
+    return tokenType;
+}
+
+
+
+
+
 int main()
 {
-    /*
+    
     root = create_trie_node('\0');
     insert_word(root, "begin", BEGIN_SYM);
     insert_word(root, "end", END_SYM);
     insert_word(root, "read", READ_SYM);
     insert_word(root, "write", WRITE_SYM);
-    */
-
     FILE *file;
     char word[MAX_WORD_SIZE];
     enum TokenType tokenName;
@@ -193,7 +214,7 @@ int main()
         perror("Error opening file");
         return 1;
     }
-    while ((tokenName = scanner(file)) != NULL_TOKEN)
+    while ((tokenName = scanner_v2(file)) != NULL_TOKEN)
     {
         switch (tokenName)
         {
@@ -206,37 +227,40 @@ int main()
         case SEMI_COLON:
             printf("Semi Colon\n");
             break;
+        case BEGIN_SYM:
+            printf("BEGIN_SYM\n");
+            break;
         case END_SYM:
             printf("END_SYM\n");
             break;
-            case READ_SYM:
+        case READ_SYM:
             printf("READ_SYM\n");
             break;
-            case WRITE_SYM:
+        case WRITE_SYM:
             printf("WRITE_SYM\n");
             break;
-            case LPAREN:
+        case LPAREN:
             printf("LPAREN\n");
             break;
-            case RPAREN:
+        case RPAREN:
             printf("RPAREN\n");
             break;
-            case ASSIGN_OP:
+        case ASSIGN_OP:
             printf("ASSIGN_OP\n");
             break;
-            case PLUS_OP:
+        case PLUS_OP:
             printf("PLUS_OP\n");
             break;
-            case MINUS_OP:
+        case MINUS_OP:
             printf("MINUS_OP\n");
             break;
-            case EOF_SYM:
+        case EOF_SYM:
             printf("EOF_SYM\n");
             break;
-            case NULL_TOKEN:
+        case NULL_TOKEN:
             printf("NULL_TOKEN\n");
             break;
-            case ERROR_LEX:
+        case ERROR_LEX:
             printf("ERROR_LEX\n");
             break;
         default:

@@ -4,6 +4,7 @@
 
 
 
+
 /*
  * Funcion: create_trie_node
  * Se encarga de crear un nuevo nodo del trie,
@@ -17,7 +18,7 @@ struct trie_node* create_trie_node(char letter){
     new_node->next = NULL;
     new_node->is_end_of_word = 0;
     new_node->children = NULL;
-    //new_node->tokenType = NULL;
+    new_node->tokenType = ID;
     return new_node;
 }
 
@@ -58,7 +59,7 @@ struct trie_node* add_letter_to_list(struct linked_list* list, char letter){
 }
 
 
-void insert_word(struct trie_node* root, char* word){
+void insert_word(struct trie_node* root, char* word, enum TokenType tokenType){
     struct trie_node* current = root;
     for(int i = 0; word[i] != '\0'; i++){
         if(current->children == NULL){
@@ -70,23 +71,23 @@ void insert_word(struct trie_node* root, char* word){
         }
         current = letter;
     }
-    //current->tokenType = tokenType;
+    current->tokenType = tokenType;
     current->is_end_of_word = 1;
 }
 
-int find_word(struct trie_node* root, char* word){
+enum TokenType find_word(struct trie_node* root, char* word){
     struct trie_node* current = root;
     for(int i = 0; word[i] != '\0'; i++){
         if(current->children == NULL){
-            return NULL;
+            return ID;
         }
         struct trie_node* letter = find_letter_on_list(current->children, word[i]);
         if(letter == NULL){
-            return NULL;
+            return ID;
         }
         current = letter;
     }
-    return current->is_end_of_word;
+    return current->tokenType;
 }
 
 void print_trie(struct trie_node* root, int level){
