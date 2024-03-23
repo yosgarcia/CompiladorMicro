@@ -29,8 +29,28 @@ enum TokenType
 
 */
 
+struct derivation_tree {
+    struct derivation_tree *left;
+    struct derivation_tree *right;
+    enum TokenType token;
+    char* lexeme;
+
+};
+
+
+
+
 struct trie_node *root;
 
+
+struct derivation_tree *create_derivation_tree(enum TokenType token, char* lexeme) {
+    struct derivation_tree *tree = calloc(1, sizeof(struct derivation_tree));
+    tree->left = NULL;
+    tree->right = NULL;
+    tree->token = token;
+    tree->lexeme = lexeme;
+    return tree;
+}
 
 
 
@@ -263,12 +283,27 @@ int main()
         case ERROR_LEX:
             printf("ERROR_LEX\n");
             break;
+        case COMMA:
+            printf("COMMA\n");
+            break;
         default:
             printf("Others\n");
             break;
             
         }
     }
+    /*
+    struct derivation_tree *program = create_derivation_tree(BEGIN_SYM, NULL);
+    struct derivation_tree *current_node = program;
+    while ((current_node->right = parse_statement(file)) != NULL) {
+        current_node = current_node->right;
+    }
+    current_node->right = create_derivation_tree(END_SYM, NULL);
+
+    // Print derivation tree
+    printf("Derivation Tree:\n");
+    print_derivation_tree(program, 0);
+    */
 
     // Close the file
     fclose(file);

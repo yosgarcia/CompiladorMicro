@@ -1,5 +1,7 @@
-hookah b  main exc ddxdxd 2332 455; +- := :L read
---fjwhfjwehfjwehfhwefjwe;
-;;
-write begin
+begin
+	read(a,b);
+	cc := a + (b-2);
+	p:=a-s;
+	write(cc,a+4);
+	read(a);
 end
