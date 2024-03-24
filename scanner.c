@@ -43,15 +43,6 @@ struct derivation_tree {
 struct trie_node *root;
 
 
-struct derivation_tree *create_derivation_tree(enum TokenType token, char* lexeme) {
-    struct derivation_tree *tree = calloc(1, sizeof(struct derivation_tree));
-    tree->left = NULL;
-    tree->right = NULL;
-    tree->token = token;
-    tree->lexeme = lexeme;
-    return tree;
-}
-
 
 
 enum TokenType scanner(FILE *file)
@@ -213,7 +204,169 @@ enum TokenType scanner_v2(FILE *file) {
 
 
 
+void match(enum TokenType expectedToken, FILE *file)
+{
+    enum TokenType token = scanner_v2(file);
+    if (token == expectedToken)
+    {
+        printf("Matched token: %d\n", token);
+    }
+    else
+    {
+        printf("Syntax Error: Expected token %d, but got %d\n", expectedToken, token);
+        exit(1);
+    }
+}
 
+void systema_goal(FILE *file)
+{
+    program(file);
+    match(EOF_SYM, file);
+}
+
+void program(FILE *file)
+{
+    match(BEGIN_SYM, file);
+    statement_list(file);
+    match(END_SYM, file);
+}
+
+
+void statement_list(FILE *file)
+{
+    statement(file);
+    
+    while (1)
+    {
+        enum TokenType token = scanner_v2(file);
+        switch(token) {
+            case ID:
+            case READ_SYM:
+            case WRITE_SYM:
+                ungetc(token, file);
+                statement(file);
+                break;
+            default:
+                ungetc(token, file);
+                return;
+        }
+    }
+}
+
+
+void statement(FILE* file){
+    enum TokenType token = scanner_v2(file);
+    switch(token){
+        case ID:
+            match(ID, file);
+            match(ASSIGN_OP, file);
+            expression(file);
+            match(SEMI_COLON, file);
+            break;
+        case READ_SYM:
+            match(READ_SYM, file);
+            match(LPAREN, file);
+            id_list(file);
+            match(RPAREN, file);
+            match(SEMI_COLON, file);
+        case WRITE_SYM:
+            match(WRITE_SYM, file);
+            match(LPAREN, file);
+            expression_list(file);
+            match(RPAREN, file);
+            match(SEMI_COLON, file);
+            break;
+        default:
+            //  Capaz implementar fucnion de syntax error que reciba como
+            // parametro el token
+            printf("Syntax Error: Expected token ID, READ_SYM, or WRITE_SYM, but got %d\n", token);
+            exit(1);
+    }
+}
+
+void id_list(FILE* file){
+    match(ID, file);
+    // verificar si el loop debe tener otra condicion
+    while(1){
+        enum TokenType token = scanner_v2(file);
+        if(token == COMMA){
+            match(COMMA, file);
+            match(ID, file);
+        }else{
+            ungetc(token, file);
+            return;
+        }
+    }
+}
+
+void expression_list(FILE* file){
+    expression(file);
+    while(1){
+        enum TokenType token = scanner_v2(file);
+        if(token == COMMA){
+            match(COMMA, file);
+            expression(file);
+        }else{
+            ungetc(token, file);
+            return;
+        }
+    }
+}
+
+
+void expression(FILE* file){
+    primary(file);
+    enum TokenType token = scanner_v2(file);
+    if(token == PLUS_OP){
+        plus_op(file);
+        primary(file);
+    }
+    else{
+        ungetc(token, file);
+        return;
+    }
+}
+
+void primary(FILE* file){
+    enum TokenType token = scanner_v2(file);
+    switch(token){
+        case MINUS_OP:
+            match(MINUS_OP, file);
+            primary(file);
+            break;
+        case LPAREN:
+            match(LPAREN, file);
+            expression(file);
+            match(RPAREN, file);
+            break;
+        case ID:
+            match(ID, file);
+            break;
+        case INT_LITERAL:
+            match(INT_LITERAL, file);
+            break;
+        default:
+        // Syntaxt error(token) tal vez
+            printf("Syntax Error:");
+            exit(1);
+    }
+}
+
+
+void plus_op(FILE* file){
+    enum TokenType token = scanner_v2(file);
+    switch(token){
+        case PLUS_OP:
+            match(PLUS_OP, file);
+            break;
+        case MINUS_OP:
+            match(MINUS_OP, file);
+            break;
+        default:
+            printf("Syntax Error: Expected token PLUS_OP, but got %d\n", token);
+            exit(1);
+    }
+}
 
 int main()
 {
