@@ -166,7 +166,7 @@ enum TokenType scanner_v2(FILE *file) {
             case '-':
                 if ((current_Char = fgetc(file)) == '-') {
                     while ((current_Char = fgetc(file)) != EOF && current_Char != '\n');
-                    return scanner(file);
+                    return scanner_v2(file);
                 }
                 ungetc(current_Char, file);
                 return MINUS_OP;
@@ -210,6 +210,7 @@ void syntax_error(enum TokenType token) {
 void match(enum TokenType expectedToken, FILE *file)
 {
     enum TokenType token = scanner_v2(file);
+    printf(" token: %d\n", token);
     if (token == expectedToken)
     {
         printf("Matched token: %d\n", token);
@@ -243,9 +244,13 @@ void statement_list(FILE *file)
         enum TokenType token = scanner_v2(file);
         switch(token) {
             case ID:
+                statement(file);
+                break;  
             case READ_SYM:
+                statement(file);
+                break;
             case WRITE_SYM:
-                ungetc(token, file);
+                //ungetc(token, file);
                 statement(file);
                 break;
             default:
@@ -258,21 +263,22 @@ void statement_list(FILE *file)
 
 void statement(FILE* file){
     enum TokenType token = scanner_v2(file);
+    printf("statement token: %d\n", token);
     switch(token){
         case ID:
-            match(ID, file);
             match(ASSIGN_OP, file);
             expression(file);
             match(SEMI_COLON, file);
             break;
         case READ_SYM:
-            match(READ_SYM, file);
+            printf("hola");
             match(LPAREN, file);
             id_list(file);
+            printf("holiis");
             match(RPAREN, file);
             match(SEMI_COLON, file);
+            break;
         case WRITE_SYM:
-            match(WRITE_SYM, file);
             match(LPAREN, file);
             expression_list(file);
             match(RPAREN, file);
@@ -289,9 +295,10 @@ void id_list(FILE* file){
     while(1){
         enum TokenType token = scanner_v2(file);
         if(token == COMMA){
-            match(COMMA, file);
+            //match(COMMA, file);
             match(ID, file);
         }else{
+            printf("Aquiiii mi token %d\n", token);
             ungetc(token, file);
             return;
         }
@@ -383,6 +390,9 @@ int main()
         perror("Error opening file");
         return 1;
     }
+
+    systema_goal(file);
+
     while ((tokenName = scanner_v2(file)) != NULL_TOKEN)
     {
         switch (tokenName)
