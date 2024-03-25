@@ -202,7 +202,10 @@ enum TokenType scanner_v2(FILE *file) {
     return tokenType;
 }
 
-
+void syntax_error(enum TokenType token) {
+    printf("Syntax Error: Unexpected token %d\n", token);
+    exit(1);
+}
 
 void match(enum TokenType expectedToken, FILE *file)
 {
@@ -213,8 +216,7 @@ void match(enum TokenType expectedToken, FILE *file)
     }
     else
     {
-        printf("Syntax Error: Expected token %d, but got %d\n", expectedToken, token);
-        exit(1);
+        syntax_error(token);
     }
 }
 
@@ -277,10 +279,7 @@ void statement(FILE* file){
             match(SEMI_COLON, file);
             break;
         default:
-            //  Capaz implementar fucnion de syntax error que reciba como
-            // parametro el token
-            printf("Syntax Error: Expected token ID, READ_SYM, or WRITE_SYM, but got %d\n", token);
-            exit(1);
+            syntax_error(token);
     }
 }
 
@@ -346,9 +345,7 @@ void primary(FILE* file){
             match(INT_LITERAL, file);
             break;
         default:
-        // Syntaxt error(token) tal vez
-            printf("Syntax Error:");
-            exit(1);
+            syntax_error(token);
     }
 }
 
@@ -363,8 +360,7 @@ void plus_op(FILE* file){
             match(MINUS_OP, file);
             break;
         default:
-            printf("Syntax Error: Expected token PLUS_OP, but got %d\n", token);
-            exit(1);
+            syntax_error(token);
     }
 }
 
