@@ -150,6 +150,7 @@ struct content* scanner_v2(FILE *file) {
     enum TokenType tokenType = NULL_TOKEN;
 
     while ((current_Char = fgetc(file)) != EOF) {
+        printf("Current char %c \n", current_Char);
         switch(current_Char) {
             case ' ':
             case '\t':
@@ -231,6 +232,8 @@ void match(enum TokenType expectedToken, FILE *file)
     }
     else
     {
+        printf("Match function else\n");
+       // printf("THis is the lexema %c \n ", token->lexema);
         syntax_error(token->token);
     }
 }
@@ -251,23 +254,24 @@ void program(FILE *file)
 
 void statement_list(FILE *file)
 {
-    statement(file);
+    struct content* token = scanner_v2(file);
+    
+    statement(file, token);
     
     while (1)
     {
         struct content* token = scanner_v2(file);
+        printf("Statement list %s \n",token->lexema);
         switch(token->token) {
             case ID:
-                statement(file);
-                break;  
             case READ_SYM:
-                statement(file);
-                break;
             case WRITE_SYM:
-                //ungetc(token, file);
-                statement(file);
-                break;
+               statement(file, token);
+               break;
+                
             default:
+            // REEMPLAZAR POR CUSTOM UNGET
+            printf("Unget in while statement list\n %s the lexema\n",token->lexema);
                 ungetc(token->lexema, file);
                 return;
         }
@@ -275,9 +279,12 @@ void statement_list(FILE *file)
 }
 
 
-void statement(FILE* file){
-    struct content* token = scanner_v2(file);
-    printf("statement token: %d\n", token->token);
+void statement(FILE* file, struct content* token){
+    //struct content* token = scanner_v2(file);
+    printf("statement token id: %d\n", token->token);
+    
+     printf("statement token lexema: %s\n", token->lexema);
+
     switch(token->token){
         case ID:
             match(ASSIGN_OP, file);
@@ -299,12 +306,15 @@ void statement(FILE* file){
             match(SEMI_COLON, file);
             break;
         default:
+            printf("%s is the lexema \n",token->lexema);
+            
             syntax_error(token->token);
     }
 }
 
 void id_list(FILE* file){
     match(ID, file);
+    printf("Matchee un id en id list\n");
     // verificar si el loop debe tener otra condicion
     while(1){
         struct content* token = scanner_v2(file);
@@ -337,6 +347,7 @@ void expression_list(FILE* file){
 
 
 void expression(FILE* file){
+    printf("Expression function \n");
     primary(file);
     struct content* token = scanner_v2(file);
     if(token->token == PLUS_OP){
@@ -344,28 +355,30 @@ void expression(FILE* file){
         primary(file);
     }
     else{
+        //cambiar por custom unget
         ungetc(token->lexema, file);
         return;
     }
 }
 
 void primary(FILE* file){
+    printf("Primary function \n");
     struct content* token = scanner_v2(file);
     switch(token->token){
         case MINUS_OP:
-            match(MINUS_OP, file);
+            //match(MINUS_OP, file);
             primary(file);
             break;
         case LPAREN:
-            match(LPAREN, file);
+            //match(LPAREN, file);
             expression(file);
             match(RPAREN, file);
             break;
         case ID:
-            match(ID, file);
+            //match(ID, file);
             break;
         case INT_LITERAL:
-            match(INT_LITERAL, file);
+            //match(INT_LITERAL, file);
             break;
         default:
             syntax_error(token->token);
