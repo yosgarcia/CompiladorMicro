@@ -274,6 +274,29 @@ void syntax_error(enum TokenType token) {
     exit(1);
 }
 
+void next_token(FILE *file, struct double_linked_list* tokens){
+    add_node_to_list(tokens,scanner_v2(file));
+
+}
+
+
+void match_V2(enum TokenType expectedToken, struct double_linked_list* tokens)
+{
+    if (tokens==NULL)
+    {
+        printf("Lista vacia ERROR");
+    }
+    
+    if (expectedToken==tokens->start->content->token)
+    {
+        printf("Match hecho con %d ", tokens->start->content->token);
+        remove_start_list(tokens);
+    }
+    else{
+        syntax_error(tokens->start->content->token);
+    }
+    
+}
 void match(enum TokenType expectedToken, FILE *file)
 {
     struct content* token = scanner_v2(file);
@@ -289,24 +312,66 @@ void match(enum TokenType expectedToken, FILE *file)
         syntax_error(token->token);
     }
 }
+void system_goal_v2(FILE* file, struct double_linked_list* tokens){
+    program_v2(file,tokens);
 
+    next_token(file,tokens);
+    match_V2(EOF_SYM,tokens);
+
+}
 void systema_goal(FILE *file)
 {
     program(file);
     match(EOF_SYM, file);
 }
 
-void program(FILE *file)
+void program_v2(FILE *file,struct double_linked_list* tokens)
 {
-    match(BEGIN_SYM, file);
-    statement_list(file);
-    match(END_SYM, file);
+
+    next_token(file,tokens);
+    match_V2(BEGIN_SYM, tokens);
+    //Cambiar por V2
+    statement_list_v2(file,tokens);
+
+    next_token(file,tokens);
+    match_V2(END_SYM, tokens);
+    
 }
 
 
-void statement_list(FILE *file)
+void statement_list_V2(FILE *file,struct double_linked_list* tokens )
+{
+    next_token(file,tokens);
+    
+    
+    statement_v2(file, tokens);
+    
+    while (1)
+    {
+        struct content* token = scanner_v2(file);
+        printf("Statement list %s \n",token->lexema);
+        switch(token->token) {
+            case ID:
+            case READ_SYM:
+            case WRITE_SYM:
+               statement(file, token);
+               break;
+                
+            default:
+            // REEMPLAZAR POR CUSTOM UNGET
+            printf("Unget in while statement list\n %s the lexema\n",token->lexema);
+                ungetc(token->lexema, file);
+                return;
+        }
+    }
+}
+
+
+void statement_list(FILE *file )
 {
     struct content* token = scanner_v2(file);
+    
+    
     
     statement(file, token);
     
@@ -329,7 +394,6 @@ void statement_list(FILE *file)
         }
     }
 }
-
 
 void statement(FILE* file, struct content* token){
     //struct content* token = scanner_v2(file);
@@ -361,6 +425,36 @@ void statement(FILE* file, struct content* token){
             printf("%s is the lexema \n",token->lexema);
             
             syntax_error(token->token);
+    }
+}
+
+void statement_v2(FILE* file, struct double_linked_list* tokens){
+    
+
+    switch(tokens->start->content->token){
+        case ID:
+            match_V2(ASSIGN_OP, tokens);
+            expression(file);
+            match_v2(SEMI_COLON, tokens);
+            break;
+        case READ_SYM:
+            printf("hola");
+            match_v2(LPAREN, tokens);
+            id_list(file);
+            printf("holiis");
+            match_V2(RPAREN, tokens);
+            match_v2(SEMI_COLON, tokens);
+            break;
+        case WRITE_SYM:
+            match_V2(LPAREN,tokens);
+            expression_list(file);
+            match_V2(RPAREN, tokens);
+            match_V2(SEMI_COLON,tokens);
+            break;
+        default:
+            printf("Syntax error in statement v2");
+            
+            //syntax_error(token->token);
     }
 }
 
