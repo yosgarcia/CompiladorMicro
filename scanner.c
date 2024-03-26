@@ -34,6 +34,58 @@ struct content {
     char* lexema;
 };
 
+struct double_node {
+    struct content* content;
+    struct double_node* next;
+    struct double_node* prev;
+};
+
+struct double_linked_list {
+    struct double_node* start;
+};
+
+
+
+struct double_linked_list* create_double_linked_list() {
+    struct double_linked_list* new_list = calloc(1, sizeof(struct double_linked_list));
+    new_list->start = NULL;
+    return new_list;
+}
+
+struct double_linked_list* add_node_to_list(struct double_linked_list* list, struct content* content) {
+    struct double_node* new_node = calloc(1, sizeof(struct double_node));
+    new_node->content = content;
+    if (list == NULL) {
+        return NULL;
+    }
+    if (list->start == NULL) {
+        list->start = new_node;
+        return list;
+    }
+    struct double_node* current = list->start;
+    while (current->next != NULL) {
+        current = current->next;
+    }
+    current->next = new_node;
+    new_node->prev = current;
+    return list;
+}
+
+struct double_linked_list* remove_start_list(struct double_linked_list* list) {
+    if(list == NULL) {
+        return NULL;
+    }
+    if(list->start == NULL) {
+        return list;
+    }
+    struct double_node* temp = list->start;
+    list->start->next->prev = NULL;
+    list->start = list->start->next;
+    free(temp);
+    return list;
+
+}
+
 struct content* create_content(enum TokenType token, char* lexema) {
     struct content* new_content = calloc(1, sizeof(struct content));
     new_content->token = token;
