@@ -29,15 +29,17 @@ enum TokenType
 
 */
 
-struct derivation_tree {
-    struct derivation_tree *left;
-    struct derivation_tree *right;
+struct content {
     enum TokenType token;
-    char* lexeme;
-
+    char* lexema;
 };
 
-
+struct content* create_content(enum TokenType token, char* lexema) {
+    struct content* new_content = calloc(1, sizeof(struct content));
+    new_content->token = token;
+    new_content->lexema = lexema;
+    return new_content;
+}
 
 
 struct trie_node *root;
@@ -143,7 +145,7 @@ enum TokenType scanner(FILE *file)
 
 
 
-enum TokenType scanner_v2(FILE *file) {
+struct content* scanner_v2(FILE *file) {
     char current_Char;
     enum TokenType tokenType = NULL_TOKEN;
 
@@ -154,33 +156,45 @@ enum TokenType scanner_v2(FILE *file) {
             case '\n':
                 continue;
             case '(':
-                return LPAREN;
+                return  create_content(LPAREN, current_Char);
             case ')':
-                return RPAREN;
+                return  create_content(RPAREN, current_Char);
             case ';':
-                return SEMI_COLON;
+                return create_content(SEMI_COLON, current_Char);
             case ',':
-                return COMMA;
+                return create_content(COMMA, current_Char);
             case '+':
-                return PLUS_OP;
+                return create_content(PLUS_OP, current_Char);
             case '-':
                 if ((current_Char = fgetc(file)) == '-') {
                     while ((current_Char = fgetc(file)) != EOF && current_Char != '\n');
                     return scanner_v2(file);
                 }
                 ungetc(current_Char, file);
-                return MINUS_OP;
+                return create_content(MINUS_OP, current_Char);
             case ':':
                 if ((current_Char = fgetc(file)) == '=') {
-                    return ASSIGN_OP;
+                    return create_content(ASSIGN_OP, ":=");
                 }
+                
                 ungetc(current_Char, file);
-                return ERROR_LEX;
+                char error[3];
+                error[0] = '-';
+                error[1] = current_Char;
+                error[2] = '\0';
+                return create_content(ERROR_LEX, error);
             default:
                 if (isdigit(current_Char)) {
-                    while ((current_Char = fgetc(file)) != EOF && isdigit(current_Char));
+                    char number[MAX_WORD_SIZE];
+                    int index = 0;
+                    number[index++] = current_Char;
+
+                    while ((current_Char = fgetc(file)) != EOF && isdigit(current_Char)){
+                        number[index++] = current_Char;
+                    }
+                    number[index] = '\0';
                     ungetc(current_Char, file);
-                    return INT_LITERAL;
+                    return create_content(INT_LITERAL, number);
                 } else if (isalpha(current_Char)) {
                     char identifier[MAX_WORD_SIZE];
                     int index = 0;
@@ -192,14 +206,14 @@ enum TokenType scanner_v2(FILE *file) {
 
                     identifier[index] = '\0';
                     ungetc(current_Char, file);
-
-                    return find_word(root, identifier);
+                    enum TokenType token = find_word(root, identifier);
+                    return create_content(token, identifier);
                 } else {
-                    return ERROR_LEX;
+                    return create_content(ERROR_LEX, current_Char);
                 }
         }
     }
-    return tokenType;
+    return create_content(EOF_SYM, "EOF");
 }
 
 void syntax_error(enum TokenType token) {
@@ -209,15 +223,15 @@ void syntax_error(enum TokenType token) {
 
 void match(enum TokenType expectedToken, FILE *file)
 {
-    enum TokenType token = scanner_v2(file);
-    printf(" token: %d\n", token);
-    if (token == expectedToken)
+    struct content* token = scanner_v2(file);
+    printf(" token: %d\n", token->token);
+    if (token->token == expectedToken)
     {
-        printf("Matched token: %d\n", token);
+        printf("Matched token: %d\n", token->token);
     }
     else
     {
-        syntax_error(token);
+        syntax_error(token->token);
     }
 }
 
@@ -241,8 +255,8 @@ void statement_list(FILE *file)
     
     while (1)
     {
-        enum TokenType token = scanner_v2(file);
-        switch(token) {
+        struct content* token = scanner_v2(file);
+        switch(token->token) {
             case ID:
                 statement(file);
                 break;  
@@ -254,7 +268,7 @@ void statement_list(FILE *file)
                 statement(file);
                 break;
             default:
-                ungetc(token, file);
+                ungetc(token->lexema, file);
                 return;
         }
     }
@@ -262,9 +276,9 @@ void statement_list(FILE *file)
 
 
 void statement(FILE* file){
-    enum TokenType token = scanner_v2(file);
-    printf("statement token: %d\n", token);
-    switch(token){
+    struct content* token = scanner_v2(file);
+    printf("statement token: %d\n", token->token);
+    switch(token->token){
         case ID:
             match(ASSIGN_OP, file);
             expression(file);
@@ -285,7 +299,7 @@ void statement(FILE* file){
             match(SEMI_COLON, file);
             break;
         default:
-            syntax_error(token);
+            syntax_error(token->token);
     }
 }
 
@@ -293,13 +307,15 @@ void id_list(FILE* file){
     match(ID, file);
     // verificar si el loop debe tener otra condicion
     while(1){
-        enum TokenType token = scanner_v2(file);
-        if(token == COMMA){
+        struct content* token = scanner_v2(file);
+        if(token->token == COMMA){
             //match(COMMA, file);
             match(ID, file);
         }else{
-            printf("Aquiiii mi token %d\n", token);
-            ungetc(token, file);
+            printf("Aquiiii mi token %d\n", token->token);
+            printf("Prueba de ungetc %c\n", token->lexema);
+            ungetc(token->lexema, file);
+
             return;
         }
     }
@@ -308,12 +324,12 @@ void id_list(FILE* file){
 void expression_list(FILE* file){
     expression(file);
     while(1){
-        enum TokenType token = scanner_v2(file);
-        if(token == COMMA){
+        struct content* token = scanner_v2(file);
+        if(token->token == COMMA){
             match(COMMA, file);
             expression(file);
         }else{
-            ungetc(token, file);
+            ungetc(token->lexema, file);
             return;
         }
     }
@@ -322,20 +338,20 @@ void expression_list(FILE* file){
 
 void expression(FILE* file){
     primary(file);
-    enum TokenType token = scanner_v2(file);
-    if(token == PLUS_OP){
+    struct content* token = scanner_v2(file);
+    if(token->token == PLUS_OP){
         plus_op(file);
         primary(file);
     }
     else{
-        ungetc(token, file);
+        ungetc(token->lexema, file);
         return;
     }
 }
 
 void primary(FILE* file){
-    enum TokenType token = scanner_v2(file);
-    switch(token){
+    struct content* token = scanner_v2(file);
+    switch(token->token){
         case MINUS_OP:
             match(MINUS_OP, file);
             primary(file);
@@ -352,14 +368,14 @@ void primary(FILE* file){
             match(INT_LITERAL, file);
             break;
         default:
-            syntax_error(token);
+            syntax_error(token->token);
     }
 }
 
 
 void plus_op(FILE* file){
-    enum TokenType token = scanner_v2(file);
-    switch(token){
+    struct content* token = scanner_v2(file);
+    switch(token->token){
         case PLUS_OP:
             match(PLUS_OP, file);
             break;
@@ -367,7 +383,7 @@ void plus_op(FILE* file){
             match(MINUS_OP, file);
             break;
         default:
-            syntax_error(token);
+            syntax_error(token->token);
     }
 }
 
@@ -381,7 +397,7 @@ int main()
     insert_word(root, "write", WRITE_SYM);
     FILE *file;
     char word[MAX_WORD_SIZE];
-    enum TokenType tokenName;
+    struct content* tokenName;
 
     // Open the file
     file = fopen("input.txt", "r");
@@ -393,9 +409,9 @@ int main()
 
     systema_goal(file);
 
-    while ((tokenName = scanner_v2(file)) != NULL_TOKEN)
+    while ((tokenName = scanner_v2(file))->token != NULL_TOKEN)
     {
-        switch (tokenName)
+        switch (tokenName->token)
         {
         case INT_LITERAL:
             printf("INT\n");
