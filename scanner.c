@@ -53,15 +53,29 @@ struct double_linked_list* create_double_linked_list() {
 }
 
 struct double_linked_list* add_node_to_list(struct double_linked_list* list, struct content* content) {
+    
+    struct double_node* temp= list->start;
+    while (temp)
+    {
+        printf("Lista es ");
+        ("%s --->",temp->content->lexema);
+        temp=temp->next;
+    }
+    printf("\n");
+    
+    
     struct double_node* new_node = calloc(1, sizeof(struct double_node));
     new_node->content = content;
     if (list == NULL) {
+      
         return NULL;
     }
     if (list->start == NULL) {
         list->start = new_node;
+    
         return list;
     }
+    
     struct double_node* current = list->start;
     while (current->next != NULL) {
         current = current->next;
@@ -72,12 +86,20 @@ struct double_linked_list* add_node_to_list(struct double_linked_list* list, str
 }
 
 struct double_linked_list* remove_start_list(struct double_linked_list* list) {
+    
     if(list == NULL) {
         return NULL;
     }
     if(list->start == NULL) {
         return list;
     }
+    if (!list->start->next)
+    {
+        free(list->start);
+        list->start=NULL;
+        return list;
+    }
+    
     struct double_node* temp = list->start;
     list->start->next->prev = NULL;
     list->start = list->start->next;
@@ -88,8 +110,10 @@ struct double_linked_list* remove_start_list(struct double_linked_list* list) {
 
 struct content* create_content(enum TokenType token, char* lexema) {
     struct content* new_content = calloc(1, sizeof(struct content));
+
     new_content->token = token;
-    new_content->lexema = lexema;
+    new_content->lexema = strdup(lexema);
+    
     return new_content;
 }
 
@@ -97,6 +121,12 @@ struct content* create_content(enum TokenType token, char* lexema) {
 struct trie_node *root;
 
 
+char* char_to_string(char c){
+    char* str= calloc(2,sizeof(char));
+    str[0]=c;
+    str[1]='\0';
+    return str;
+}
 
 
 enum TokenType scanner(FILE *file)
@@ -203,31 +233,35 @@ struct content* scanner_v2(FILE *file) {
 
     while ((current_Char = fgetc(file)) != EOF) {
         printf("Current char %c \n", current_Char);
+        
         switch(current_Char) {
             case ' ':
             case '\t':
             case '\n':
                 continue;
             case '(':
-                return  create_content(LPAREN, current_Char);
+                
+                return  create_content(LPAREN, char_to_string(current_Char));
+                
             case ')':
-                return  create_content(RPAREN, current_Char);
+                return  create_content(RPAREN, char_to_string(current_Char));
             case ';':
-                return create_content(SEMI_COLON, current_Char);
+                return create_content(SEMI_COLON, char_to_string(current_Char));
             case ',':
-                return create_content(COMMA, current_Char);
+                return create_content(COMMA, char_to_string(current_Char));
             case '+':
-                return create_content(PLUS_OP, current_Char);
+                return create_content(PLUS_OP, char_to_string(current_Char));
             case '-':
                 if ((current_Char = fgetc(file)) == '-') {
                     while ((current_Char = fgetc(file)) != EOF && current_Char != '\n');
                     return scanner_v2(file);
                 }
                 ungetc(current_Char, file);
-                return create_content(MINUS_OP, current_Char);
+                return create_content(MINUS_OP, strdup("-"));
             case ':':
                 if ((current_Char = fgetc(file)) == '=') {
-                    return create_content(ASSIGN_OP, ":=");
+                    //posible error
+                    return create_content(ASSIGN_OP, strdup(":="));
                 }
                 
                 ungetc(current_Char, file);
@@ -235,7 +269,7 @@ struct content* scanner_v2(FILE *file) {
                 error[0] = '-';
                 error[1] = current_Char;
                 error[2] = '\0';
-                return create_content(ERROR_LEX, error);
+                return create_content(ERROR_LEX, strdup(error));
             default:
                 if (isdigit(current_Char)) {
                     char number[MAX_WORD_SIZE];
@@ -247,7 +281,7 @@ struct content* scanner_v2(FILE *file) {
                     }
                     number[index] = '\0';
                     ungetc(current_Char, file);
-                    return create_content(INT_LITERAL, number);
+                    return create_content(INT_LITERAL, strdup(number));
                 } else if (isalpha(current_Char)) {
                     char identifier[MAX_WORD_SIZE];
                     int index = 0;
@@ -260,9 +294,10 @@ struct content* scanner_v2(FILE *file) {
                     identifier[index] = '\0';
                     ungetc(current_Char, file);
                     enum TokenType token = find_word(root, identifier);
-                    return create_content(token, identifier);
+                 
+                    return create_content(token, strdup(identifier));
                 } else {
-                    return create_content(ERROR_LEX, current_Char);
+                    return create_content(ERROR_LEX, char_to_string(current_Char));
                 }
         }
     }
@@ -275,24 +310,31 @@ void syntax_error(enum TokenType token) {
 }
 
 void next_token(FILE *file, struct double_linked_list* tokens){
+    
+    
+
     add_node_to_list(tokens,scanner_v2(file));
+
 
 }
 
 
 void match_V2(enum TokenType expectedToken, struct double_linked_list* tokens)
 {
-    if (tokens==NULL)
-    {
-        printf("Lista vacia ERROR");
-    }
+  
+     
+   
+    
+    
     
     if (expectedToken==tokens->start->content->token)
     {
-        printf("Match hecho con %d ", tokens->start->content->token);
+        
         remove_start_list(tokens);
+       
     }
     else{
+       
         syntax_error(tokens->start->content->token);
     }
     
@@ -321,17 +363,20 @@ void system_goal_v2(FILE* file, struct double_linked_list* tokens){
 }
 void systema_goal(FILE *file)
 {
-    program(file);
+    //program(file);
     match(EOF_SYM, file);
 }
 
 void program_v2(FILE *file,struct double_linked_list* tokens)
 {
+  
 
     next_token(file,tokens);
+    
     match_V2(BEGIN_SYM, tokens);
+      
     //Cambiar por V2
-    statement_list_v2(file,tokens);
+    statement_list_V2(file,tokens);
 
     next_token(file,tokens);
     match_V2(END_SYM, tokens);
@@ -343,24 +388,23 @@ void statement_list_V2(FILE *file,struct double_linked_list* tokens )
 {
     next_token(file,tokens);
     
-    
+   
     statement_v2(file, tokens);
+   
     
     while (1)
     {
-        struct content* token = scanner_v2(file);
-        printf("Statement list %s \n",token->lexema);
-        switch(token->token) {
+        next_token(file,tokens);
+        
+        switch(tokens->start->content->token) {
             case ID:
             case READ_SYM:
             case WRITE_SYM:
-               statement(file, token);
+               statement_v2(file, tokens);
                break;
                 
             default:
-            // REEMPLAZAR POR CUSTOM UNGET
-            printf("Unget in while statement list\n %s the lexema\n",token->lexema);
-                ungetc(token->lexema, file);
+    
                 return;
         }
     }
@@ -378,7 +422,7 @@ void statement_list(FILE *file )
     while (1)
     {
         struct content* token = scanner_v2(file);
-        printf("Statement list %s \n",token->lexema);
+      
         switch(token->token) {
             case ID:
             case READ_SYM:
@@ -429,32 +473,59 @@ void statement(FILE* file, struct content* token){
 }
 
 void statement_v2(FILE* file, struct double_linked_list* tokens){
-    
+  
 
     switch(tokens->start->content->token){
         case ID:
+          
+            match_V2(ID,tokens);
+         
+            next_token(file,tokens);
             match_V2(ASSIGN_OP, tokens);
-            expression(file);
-            match_v2(SEMI_COLON, tokens);
+            expression_v2(file,tokens);
+
+            next_token(file,tokens);
+           
+            match_V2(SEMI_COLON, tokens);
+         
             break;
         case READ_SYM:
-            printf("hola");
-            match_v2(LPAREN, tokens);
-            id_list(file);
-            printf("holiis");
+          
+            match_V2(READ_SYM,tokens);
+          
+            next_token(file,tokens);
+           
+            match_V2(LPAREN, tokens);
+            
+            id_list_v2(file,tokens);
+
+            
+            next_token(file,tokens);
             match_V2(RPAREN, tokens);
-            match_v2(SEMI_COLON, tokens);
+        
+            next_token(file,tokens);
+
+            match_V2(SEMI_COLON, tokens);
+            
             break;
         case WRITE_SYM:
+            match_V2(WRITE_SYM,tokens);
+            next_token(file,tokens);
+
             match_V2(LPAREN,tokens);
-            expression_list(file);
+            expression_list_v2(file,tokens);
+
+            next_token(file,tokens);
+
             match_V2(RPAREN, tokens);
+            next_token(file,tokens);
+
             match_V2(SEMI_COLON,tokens);
             break;
         default:
             printf("Syntax error in statement v2");
             
-            //syntax_error(token->token);
+            syntax_error(tokens->start->content->token);
     }
 }
 
@@ -477,6 +548,28 @@ void id_list(FILE* file){
     }
 }
 
+void id_list_v2(FILE* file,struct double_linked_list* tokens){
+    next_token(file,tokens);
+  
+
+
+    match_V2(ID, tokens);
+    
+    // verificar si el loop debe tener otra condicion
+    while(1){
+        next_token(file,tokens);
+        if(tokens->start->content->token == COMMA){
+            match_V2(COMMA, tokens);
+            next_token(file,tokens);
+            match_V2(ID, tokens);
+        }else{
+          
+        
+
+            return;
+        }
+    }
+}
 void expression_list(FILE* file){
     expression(file);
     while(1){
@@ -491,6 +584,19 @@ void expression_list(FILE* file){
     }
 }
 
+void expression_list_v2(FILE* file ,struct double_linked_list* tokens ){
+    expression_v2(file,tokens);
+    while(1){
+        next_token(file,tokens);
+        if(tokens->start->content->token == COMMA){
+            match_V2(COMMA, tokens);
+            expression_v2(file,tokens);
+        }else{
+      
+            return;
+        }
+    }
+}
 
 void expression(FILE* file){
     printf("Expression function \n");
@@ -506,6 +612,52 @@ void expression(FILE* file){
         return;
     }
 }
+void expression_v2(FILE* file, struct double_linked_list* tokens){
+   
+    primary_v2(file,tokens);
+    next_token(file,tokens);
+    //Antes estaba asi, pero no aceptaba menos XD
+    // if(tokens->start->content->token == PLUS_OP ){
+    if(tokens->start->content->token == PLUS_OP || tokens->start->content->token ==MINUS_OP){
+     
+        plus_op_v2(file,tokens);
+        primary_v2(file,tokens);
+    }
+    else{
+        
+        return;
+    }
+}
+
+void primary_v2(FILE* file , struct double_linked_list* tokens){
+    
+    next_token(file,tokens);
+    switch(tokens->start->content->token){
+        case MINUS_OP:
+      
+            match_V2(MINUS_OP, tokens);
+            primary_v2(file,tokens);
+            break;
+        case LPAREN:
+            match_V2(LPAREN, tokens);
+            expression_v2(file,tokens);
+            next_token(file,tokens);
+       
+            match_V2(RPAREN, tokens);
+            break;
+        case ID:
+            match_V2(ID, tokens);
+            break;
+        case INT_LITERAL:
+          
+
+            match_V2(INT_LITERAL, tokens);
+            break;
+        default:
+            syntax_error(tokens->start->content->token);
+    }
+}
+
 
 void primary(FILE* file){
     printf("Primary function \n");
@@ -545,6 +697,19 @@ void plus_op(FILE* file){
             syntax_error(token->token);
     }
 }
+void plus_op_v2(FILE* file, struct double_linked_list* tokens){
+    next_token(file,tokens);
+    switch(tokens->start->content->token){
+        case PLUS_OP:
+            match_V2(PLUS_OP, tokens);
+            break;
+        case MINUS_OP:
+            match_V2(MINUS_OP, tokens);
+            break;
+        default:
+            syntax_error(tokens->start->content->token);
+    }
+}
 
 int main()
 {
@@ -565,9 +730,10 @@ int main()
         perror("Error opening file");
         return 1;
     }
-
-    systema_goal(file);
-
+    struct double_linked_list* tokens = create_double_linked_list();
+    
+    system_goal_v2(file, tokens);
+/*
     while ((tokenName = scanner_v2(file))->token != NULL_TOKEN)
     {
         switch (tokenName->token)
@@ -626,6 +792,8 @@ int main()
             
         }
     }
+    */
+
     /*
     struct derivation_tree *program = create_derivation_tree(BEGIN_SYM, NULL);
     struct derivation_tree *current_node = program;

@@ -4,4 +4,4 @@ begin
 	p :=a-s;
 	write(cc,a+4);
 	read(a);
-end
+ end
