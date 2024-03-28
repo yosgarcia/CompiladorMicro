@@ -128,6 +128,25 @@ struct symbol_table* create_symbol_table(){
     return new_table;
 }
 
+
+struct trie_node* add_letter_to_table(struct linked_list* list, char letter){
+    struct trie_node* new_node = create_symbol_node(letter);
+    // Verifica si la lista esta vacia y agrega el nodo
+    if(list->start == NULL){
+        list->start = new_node;
+        return new_node;
+    } else {
+        struct trie_node* current = list->start;
+        // Inserta el nodo en la ultima posicion
+        while(current->next != NULL){
+            current = current->next;
+        }
+        current->next = new_node;
+        return new_node;
+    }
+}
+
+
 void insert_symbol(struct symbol_table* table, char* word, int num){
     struct trie_node* current = table->root;
     for(int i = 0; word[i] != '\0'; i++){
@@ -136,7 +155,7 @@ void insert_symbol(struct symbol_table* table, char* word, int num){
         }
         struct trie_node* letter = find_letter_on_list(current->children, word[i]);
         if(letter == NULL){
-            letter = add_letter_to_list(current->children, word[i]);
+            letter = add_letter_to_table(current->children, word[i]);
         }
         current = letter;
     }
