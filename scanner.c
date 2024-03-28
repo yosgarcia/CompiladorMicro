@@ -82,8 +82,8 @@ void expression_list(FILE* file ,struct double_linked_list* tokens, struct NodeA
 void id_list(FILE* file,struct double_linked_list* tokens, struct NodeAST* parent);
 void statement(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent);
 void statement_list(FILE* file,struct double_linked_list* tokens, struct NodeAST* parent);
-void program(FILE *file,struct double_linked_list* tokens);
-void system_goal(FILE* file, struct double_linked_list* tokens);
+struct NodeAST* program(FILE *file,struct double_linked_list* tokens);
+struct NodeAST* system_goal(FILE* file, struct double_linked_list* tokens);
 
 
 struct trie_node *root;
@@ -515,7 +515,7 @@ void statement_list(FILE *file,struct double_linked_list* tokens, struct NodeAST
 }
 
 
-void program(FILE *file,struct double_linked_list* tokens)
+struct NodeAST* program(FILE *file,struct double_linked_list* tokens)
 {
     next_token(file,tokens);
     match(BEGIN_SYM, tokens);
@@ -524,16 +524,19 @@ void program(FILE *file,struct double_linked_list* tokens)
     print_AST_tree(root,0);
     next_token(file,tokens);
     match(END_SYM, tokens);
+    return root;
 }
 
 
-void system_goal(FILE* file, struct double_linked_list* tokens){
-    program(file,tokens);
+struct NodeAST* system_goal(FILE* file, struct double_linked_list* tokens){
+     struct NodeAST* root = program(file,tokens);
     next_token(file,tokens);
     match(EOF_SYM,tokens);
+    return root;
 }
 
-
+void translator (
+    struct NodeAST* ast_Tree)
 
 int main()
 {
@@ -547,7 +550,7 @@ int main()
     char word[MAX_WORD_SIZE];
     struct content* tokenName;
 
-    // Open the file
+    
     file = fopen("input.txt", "r");
     if (file == NULL)
     {
@@ -556,8 +559,10 @@ int main()
     }
     struct double_linked_list* tokens = create_double_linked_list();
     
-    system_goal(file, tokens);
+    struct NodeAST* ast_Tree= system_goal(file, tokens);
     fclose(file);
+
+
 
     return 0;
 }
