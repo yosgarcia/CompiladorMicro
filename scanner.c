@@ -29,6 +29,37 @@ enum TokenType
 
 */
 
+enum ASTNodeType{
+    PROGRAM_AST,
+    STATEMENT_LIST_AST,
+    STATEMENT_AST,
+    EXPRESSION_AST,
+    PRIMARY_AST,
+    EXPRESSION_LIST_AST,
+    ID_LIST_AST,
+    PLUS_OP_AST,
+    MINUS_OP_AST,
+    ASSIGN_OP_AST,
+    READ_SYM_AST,
+    WRITE_SYM_AST,
+    ID_AST,
+    INT_LITERAL_AST,
+    ADD_OP_AST
+};
+
+struct NodeAST{
+    struct NodeAST* parent;
+    enum ASTNodeType type;
+    char* lexema;
+    struct children_node_ast* children;
+    struct NodeAST* next;
+};
+
+struct children_node_ast{
+    struct NodeAST* start;
+};
+
+
 struct content {
     enum TokenType token;
     char* lexema;
@@ -44,18 +75,85 @@ struct double_linked_list {
     struct double_node* start;
 };
 
-void expression(FILE* file, struct double_linked_list* tokens);
-void plus_op(FILE* file, struct double_linked_list* tokens);
-void primary(FILE* file, struct double_linked_list* tokens);
-void expression_list(FILE* file ,struct double_linked_list* tokens );
-void id_list(FILE* file,struct double_linked_list* tokens);
-void statement(FILE* file, struct double_linked_list* tokens);
-void statement_list(FILE* file,struct double_linked_list* tokens );
+void expression(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent);
+void add_op(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent);
+void primary(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent);
+void expression_list(FILE* file ,struct double_linked_list* tokens, struct NodeAST* parent);
+void id_list(FILE* file,struct double_linked_list* tokens, struct NodeAST* parent);
+void statement(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent);
+void statement_list(FILE* file,struct double_linked_list* tokens, struct NodeAST* parent);
 void program(FILE *file,struct double_linked_list* tokens);
 void system_goal(FILE* file, struct double_linked_list* tokens);
 
 
 struct trie_node *root;
+
+
+
+struct children_node_ast* create_children_list(){
+    struct children_node_ast* new_list = calloc(1, sizeof(struct children_node_ast));
+    new_list->start = NULL;
+    return new_list;
+}
+
+struct NodeAST* create_ast_node(enum ASTNodeType type, char* lexema){
+    struct NodeAST* new_node = calloc(1, sizeof(struct NodeAST));
+    new_node->parent = NULL;
+    new_node->type = type;
+    new_node->lexema = lexema;
+    new_node->children = create_children_list();
+    return new_node;
+}
+
+void add_child(struct NodeAST* parent, struct NodeAST* child){
+    if(parent->children == NULL){
+        parent->children = create_children_list();
+        parent->children->start = child;
+        return;
+    }
+    if(parent->children->start == NULL){
+        parent->children->start = child;
+        return;
+    }
+    struct NodeAST* temp = parent->children->start;
+    while(temp->next != NULL){
+        temp = temp->next;
+    }
+    temp->next = child;
+}
+
+
+
+struct NodeAST* create_and_add_node(enum ASTNodeType type, char* lexema, struct NodeAST* parent){
+    struct NodeAST* new_node = create_ast_node(type, lexema);
+    new_node->parent = parent;
+    add_child(parent, new_node);
+    return new_node;
+}
+
+
+void print_AST_tree(struct NodeAST* root, int depth){
+    if(root == NULL){
+        return;
+    }
+
+    // Imprime espacios al principio de la línea para indicar la profundidad del nodo
+    for(int i = 0; i < depth; i++){
+        printf("  ");
+    }
+
+    printf("|___%s\n", root->lexema);
+
+    if(root->children != NULL){
+        struct NodeAST* current = root->children->start;
+        while(current != NULL){
+            // Llama a print_AST_tree con depth + 1 para los hijos
+            print_AST_tree(current, depth + 1);
+            current = current->next;
+        }
+    }
+}
+
 
 struct double_linked_list* create_double_linked_list() {
     struct double_linked_list* new_list = calloc(1, sizeof(struct double_linked_list));
@@ -229,13 +327,16 @@ void match(enum TokenType expectedToken, struct double_linked_list* tokens)
 }
 
 
-void plus_op(FILE* file, struct double_linked_list* tokens){
+void add_op(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent){
     next_token(file,tokens);
     switch(tokens->start->content->token){
         case PLUS_OP:
+            create_and_add_node(PLUS_OP_AST, "+", parent);
             match(PLUS_OP, tokens);
             break;
+
         case MINUS_OP:
+            create_and_add_node(MINUS_OP_AST, "-", parent);
             match(MINUS_OP, tokens);
             break;
         default:
@@ -244,27 +345,32 @@ void plus_op(FILE* file, struct double_linked_list* tokens){
 }
 
 
-void primary(FILE* file , struct double_linked_list* tokens){
+void primary(FILE* file , struct double_linked_list* tokens, struct NodeAST* parent){
     
     next_token(file,tokens);
     switch(tokens->start->content->token){
         case MINUS_OP:
+            create_and_add_node(MINUS_OP_AST, "-", parent);
             match(MINUS_OP, tokens);
-            primary(file,tokens);
+            struct NodeAST* primary_node = create_and_add_node(PRIMARY_AST, "PRIMARY", parent);
+            primary(file,tokens, primary_node);
             break;
 
         case LPAREN:
             match(LPAREN, tokens);
-            expression(file,tokens);
+            struct NodeAST* expression_node = create_and_add_node(EXPRESSION_AST, "EXPRESSION", parent);
+            expression(file,tokens, expression_node);
             next_token(file,tokens);
             match(RPAREN, tokens);
             break;
 
         case ID:
+            create_and_add_node(ID_AST, tokens->start->content->lexema, parent);
             match(ID, tokens);
             break;
 
         case INT_LITERAL:
+            create_and_add_node(INT_LITERAL_AST, tokens->start->content->lexema, parent);
             match(INT_LITERAL, tokens);
             break;
 
@@ -274,14 +380,17 @@ void primary(FILE* file , struct double_linked_list* tokens){
 }
 
 
-void expression(FILE* file, struct double_linked_list* tokens){
-
-    primary(file,tokens);
+void expression(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent){
+    struct NodeAST* new_primary_node = create_and_add_node(PRIMARY_AST, "PRIMARY", parent);
+    primary(file,tokens, new_primary_node);
     next_token(file,tokens);
 
     if(tokens->start->content->token == PLUS_OP || tokens->start->content->token == MINUS_OP){
-        plus_op(file,tokens);
-        primary(file,tokens);
+        struct NodeAST* add_node = create_and_add_node(ADD_OP_AST, "ADD_OP", parent);
+        add_op(file, tokens, add_node);
+
+        struct NodeAST* primary_node = create_and_add_node(PRIMARY_AST, "PRIMARY", parent);
+        primary(file, tokens, primary_node);
     }
     else{
         return;
@@ -289,13 +398,15 @@ void expression(FILE* file, struct double_linked_list* tokens){
 }
 
 
-void expression_list(FILE* file ,struct double_linked_list* tokens ){
-    expression(file,tokens);
+void expression_list(FILE* file ,struct double_linked_list* tokens, struct NodeAST* parent){
+    struct NodeAST* expression_node = create_and_add_node(EXPRESSION_AST, "EXPRESSION", parent);
+    expression(file,tokens, expression_node);
     while(1){
         next_token(file,tokens);
         if(tokens->start->content->token == COMMA){
             match(COMMA, tokens);
-            expression(file,tokens);
+            struct NodeAST* new_expression_node = create_and_add_node(EXPRESSION_AST, "EXPRESSION", parent);
+            expression(file,tokens, new_expression_node);
         }else{
       
             return;
@@ -304,16 +415,18 @@ void expression_list(FILE* file ,struct double_linked_list* tokens ){
 }
 
 
-void id_list(FILE* file,struct double_linked_list* tokens){
+void id_list(FILE* file,struct double_linked_list* tokens, struct NodeAST* parent){
     next_token(file,tokens);
+    create_and_add_node(ID_AST, tokens->start->content->lexema, parent);
     match(ID, tokens);
-    
     while(1){
         next_token(file,tokens);
         if(tokens->start->content->token == COMMA){
             match(COMMA, tokens);
             next_token(file,tokens);
+            create_and_add_node(ID_AST, tokens->start->content->lexema, parent);
             match(ID, tokens);
+            
         }else{
             return;
         }
@@ -321,33 +434,46 @@ void id_list(FILE* file,struct double_linked_list* tokens){
 }
 
 
-void statement(FILE* file, struct double_linked_list* tokens){
+void statement(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent){
     switch(tokens->start->content->token){
         case ID:
+        // Falta validar de que el ID ya este definido previamente
+            create_and_add_node(ID_AST, tokens->start->content->lexema, parent); 
             match(ID,tokens);
+            
             next_token(file,tokens);
+            create_and_add_node(ASSIGN_OP_AST, ":=", parent); // Puede que se pueda quitar
             match(ASSIGN_OP, tokens);
-            expression(file,tokens);
+            
+            struct NodeAST* expression_node = create_and_add_node(EXPRESSION_AST, "EXPRESSION", parent);
+            expression(file,tokens, expression_node);
             next_token(file,tokens);
             match(SEMI_COLON, tokens);
             break;
 
         case READ_SYM:
             match(READ_SYM,tokens);
+            create_and_add_node(READ_SYM_AST, "read", parent);
             next_token(file,tokens);
             match(LPAREN, tokens);
-            id_list(file,tokens);
+
+            struct NodeAST* id_list_node = create_and_add_node(ID_LIST_AST, "ID_LIST", parent);
+            id_list(file,tokens, id_list_node);
             next_token(file,tokens);
+
             match(RPAREN, tokens);
             next_token(file,tokens);
             match(SEMI_COLON, tokens);
             break;
 
         case WRITE_SYM:
+
+            create_and_add_node(WRITE_SYM_AST, "write", parent);
             match(WRITE_SYM,tokens);
             next_token(file,tokens);
             match(LPAREN,tokens);
-            expression_list(file,tokens);
+            struct NodeAST* expression_list_node = create_and_add_node(EXPRESSION_LIST_AST, "EXPRESSION_LIST", parent);
+            expression_list(file,tokens, expression_list_node);
             next_token(file,tokens);
             match(RPAREN, tokens);
             next_token(file,tokens);
@@ -360,20 +486,28 @@ void statement(FILE* file, struct double_linked_list* tokens){
 }
 
 
-void statement_list(FILE *file,struct double_linked_list* tokens )
+void statement_list(FILE *file,struct double_linked_list* tokens, struct NodeAST* parent)
 {
     next_token(file,tokens);
-    statement(file, tokens);
-   
+    struct NodeAST* statement_node = create_and_add_node(STATEMENT_AST, "STATEMENT", parent);
+    statement(file, tokens, statement_node);
+    
     while (1)
     {
         next_token(file,tokens);
         switch(tokens->start->content->token) {
             case ID:
+                struct NodeAST* id_statement_node = create_and_add_node(STATEMENT_AST, "STATEMENT", parent);
+                statement(file, tokens, id_statement_node);
+                break;
             case READ_SYM:
+                struct NodeAST* read_statement_node = create_and_add_node(STATEMENT_AST, "STATEMENT", parent);
+                statement(file, tokens, read_statement_node);
+                break;
             case WRITE_SYM:
-               statement(file, tokens);
-               break;
+                struct NodeAST* write_statement_node = create_and_add_node(STATEMENT_AST, "STATEMENT", parent);
+                statement(file, tokens, write_statement_node);
+                break;
             default:
                 return;
         }
@@ -385,7 +519,9 @@ void program(FILE *file,struct double_linked_list* tokens)
 {
     next_token(file,tokens);
     match(BEGIN_SYM, tokens);
-    statement_list(file,tokens);
+    struct NodeAST* root = create_ast_node(PROGRAM_AST, "program");
+    statement_list(file,tokens, root);
+    print_AST_tree(root,0);
     next_token(file,tokens);
     match(END_SYM, tokens);
 }
