@@ -535,8 +535,9 @@ struct NodeAST* system_goal(FILE* file, struct double_linked_list* tokens){
     return root;
 }
 
-void translator (
-    struct NodeAST* ast_Tree)
+void translator (struct NodeAST* ast_Tree){
+
+}
 
 int main()
 {

@@ -36,6 +36,10 @@ struct linked_list {
     struct trie_node* start;
 };
 
+struct symbol_table {
+    struct trie_node* root;
+};
+
 
 struct trie_node* create_trie_node(char letter);
 
@@ -50,6 +54,15 @@ void insert_word(struct trie_node* root, char* word, enum TokenType tokenType);
 enum TokenType find_word(struct trie_node* root, char* word);
 
 void print_trie(struct trie_node* root, int level);
+
+
+struct trie_node* create_symbol_node(char letter);
+
+struct symbol_table* create_symbol_table();
+
+void insert_symbol(struct symbol_table* table, char* word, int num);
+
+int find_symbol(struct symbol_table* table, char* word);
 
 
 #endif
