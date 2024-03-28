@@ -63,6 +63,6 @@ struct symbol_table* create_symbol_table();
 void insert_symbol(struct symbol_table* table, char* word, int num);
 
 int find_symbol(struct symbol_table* table, char* word);
-
+struct trie_node* add_letter_to_table(struct linked_list* list, char letter);
 
 #endif

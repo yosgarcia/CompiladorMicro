@@ -534,8 +534,150 @@ struct NodeAST* system_goal(FILE* file, struct double_linked_list* tokens){
     match(EOF_SYM,tokens);
     return root;
 }
+int get_temp_int(){
+        static int counter = -1; 
+        return ++counter;
+}
 
+void gen_prefix(FILE* file_asm){
+     const char *prefix = 
+         "section .text\n"
+        "global _start\n"
+        "_start:\n";
+        fputs(prefix,file_asm);
+}
+void process_id_statement(struct NodeAST* statement, FILE* file_asm
+,struct symbol_table* symbols){
+    //El nodo actual tiene STATEMENT
+
+
+}
+int process_id( char* var_name ,struct symbol_table* symbols){
+   int var_id =find_symbol(symbols,var_name);
+  if (var_id==-1)
+  {
+    int temp_pos = get_temp_int();
+    insert_symbol(symbols,var_name,temp_pos);
+    return temp_pos;// Nuevo id de la variable JIJIJIJa
+  }
+  
+    
+    return var_id;
+
+}
+
+void process_id_primary(){
+
+}
+void read_id(){
+
+}
+void generate_read_id (FILE* file_asm,int pos_id){
+
+
+
+}
+void process_id_list( struct NodeAST* ast_Node, FILE* file_asm
+,struct symbol_table* symbols){
+    if (!ast_Node->type== ID_AST)
+    {
+        perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+        return;
+    }
+    int var_id= process_id(ast_Node->lexema,symbols);
+    if (var_id==-1)
+    {
+        perror("UNKNOWN ERROR\n");
+        
+    }
+    generate_read_id(file_asm,var_id);
+
+    struct NodeAST* next_id = ast_Node->next;
+
+    while (next_id)
+    {
+        var_id = process_id(next_id->lexema,symbols);
+        generate_read_id(file_asm,var_id);
+
+        struct NodeAST* next_id = ast_Node->next;
+    }
+    
+
+
+    
+
+
+    
+
+}
+void process_read_statement(struct NodeAST* ast_Node, FILE* file_asm
+,struct symbol_table* symbols){
+    if (!ast_Node->next->type !=  ID_LIST_AST )
+    {
+        perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+        return;
+    }
+    process_id_list(ast_Node->next->children,file_asm);
+
+
+    
+
+
+}
+void process_write_statement(struct NodeAST* statement, FILE* file_asm
+,struct symbol_table* symbols){
+    //El nodo actual tiene STATEMENT
+
+
+}
+void process_statement(struct NodeAST* statement, FILE* file_asm,struct symbol_table* symbols){
+    enum ASTNodeType first_token = statement->children->start->type;
+    switch (first_token)
+    {
+    case ID_AST:
+        process_id_statement(statement->children,file_asm,symbols);
+        break;
+    case READ_SYM_AST:
+         process_read_statement(statement->children,file_asm,symbols);
+        break;
+    case WRITE_SYM_AST:
+         process_write_statement(statement->children,file_asm,symbols);
+        break;
+    
+    
+    default:
+        perror("AST TREE DOES NOT FOLLOW THE CFG RULES\n");
+        break;
+    }
+
+}
+void process_statement_list(FILE* file_asm, struct NodeAST* ast_Tree,struct symbol_table* symbols){
+     struct NodeAST* statement_temp = ast_Tree->children;
+     while (statement_temp)
+         {
+            process_statement(statement_temp,file_asm, symbols);
+            statement_temp=statement_temp->next;
+        
+     }
+     
+    
+        /* code */
+    
+    
+
+}
 void translator (struct NodeAST* ast_Tree){
+    struct symbol_table* symbols = create_symbol_table();
+    FILE* file_asm = fopen("asm_code.asm","w");
+    if (file_asm == NULL)
+    {
+        perror("Error opening file \n");
+        return 1;
+    }
+    gen_prefix(file_asm);
+    process_statement_list(file_asm,ast_Tree,symbols);
+    
+
 
 }
 
@@ -561,6 +703,7 @@ int main()
     struct double_linked_list* tokens = create_double_linked_list();
     
     struct NodeAST* ast_Tree= system_goal(file, tokens);
+    translator(ast_Tree);
     fclose(file);
 
 

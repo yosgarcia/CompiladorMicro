@@ -118,7 +118,7 @@ struct trie_node* create_symbol_node(char letter){
     new_node->children = NULL;
     new_node->next = NULL;
     new_node->is_end_of_word = -1;
-    new_node->tokenType = NULL;
+    //new_node->tokenType = NULL;
     return new_node;
 }
 
