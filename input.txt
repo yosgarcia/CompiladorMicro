@@ -1,7 +1,3 @@
 begin
-	read(a,b);
-	cc  := a + (b-2);
-	p :=a-5;
-	write(cc,a+4);
-	read(a);
+   ugabUgir553 := (((((((((0)))))))))+1+2;
  end
