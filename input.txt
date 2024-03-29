@@ -1,7 +1,7 @@
 begin
 	read(a,b);
 	cc  := a + (b-2);
-	p :=a-s;
+	p :=a-5;
 	write(cc,a+4);
 	read(a);
  end
