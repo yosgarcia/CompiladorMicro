@@ -59,7 +59,16 @@ struct children_node_ast{
     struct NodeAST* start;
 };
 
-
+enum SemanticToken{
+    LITERAL_SEMANTIC,
+    ID_SEMANTIC,
+    TEMP_RESULT_SEMANTIC,
+    EXPRESSION_RESULT_SEMANTIC
+};
+struct SemanticRecord{
+    enum SemanticToken semantic_record;
+    int semantic_info;
+};
 struct content {
     enum TokenType token;
     char* lexema;
@@ -85,10 +94,17 @@ void statement_list(FILE* file,struct double_linked_list* tokens, struct NodeAST
 struct NodeAST* program(FILE *file,struct double_linked_list* tokens);
 struct NodeAST* system_goal(FILE* file, struct double_linked_list* tokens);
 
-
+struct SemanticRecord* create_record(enum SemanticToken, int semantic_info);
 struct trie_node *root;
 
 
+struct SemanticRecord* create_record(enum SemanticToken token, int semantic_info){
+    struct SemanticRecord* new_record = calloc(1,sizeof(struct SemanticRecord));
+    new_record->semantic_record= token;
+    new_record->semantic_info;
+    return semantic_info;
+
+}
 
 struct children_node_ast* create_children_list(){
     struct children_node_ast* new_list = calloc(1, sizeof(struct children_node_ast));
@@ -666,12 +682,13 @@ void process_read_statement(struct NodeAST* ast_Node, FILE* file_asm
 
 
 
-void process_primary(struct NodeAST* ast_Node, FILE* file_asm
+struct SemanticRecord* process_primary(struct NodeAST* ast_Node, FILE* file_asm
 ,struct symbol_table* symbols){
+    struct SemanticRecord* record;
           if (!(ast_Node->type== PRIMARY_AST))
     {
         perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS PRIMARY");
-        return;
+        return NULL;
     }
     enum ASTNodeType primary_type= ast_Node->children->start->type;
     switch (primary_type)
@@ -685,34 +702,38 @@ void process_primary(struct NodeAST* ast_Node, FILE* file_asm
             return -1;
         }
         
-        // FUNCION QUE SE TRAIGA EL ID DEL STACK
+         record =create_record(primary_type,stack_position);
+        return record;
         break;
     case INT_LITERAL_AST:
-        // FUNCION QUE PONGA EL INT EN ALGUN LADO PARA SUMARLO
+         record =create_record(primary_type,atoi(ast_Node->children->start->lexema));
+        return record;
         
         break;
     case EXPRESSION_AST:
-        process_expression(ast_Node->children->start,file_asm,symbols);
+        return process_expression(ast_Node->children->start,file_asm,symbols);
         break;
     
     default:
         perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS PRIMARY DEFAULT SWITCH");
         break;
+        return NULL;
     }
+    return NULL;
     
     
 
 }
-void process_expression(struct NodeAST* ast_Node, FILE* file_asm
-,struct symbol_table* symbols){
+struct SemanticRecord* process_expression(struct NodeAST* ast_Node, FILE* file_asm ,struct symbol_table* symbols){
 
          if (!(ast_Node->type== EXPRESSION_AST))
     {
         perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS EXPRESSION");
         return;
     }
-    process_primary(ast_Node->children->start,file_asm,symbols);
-   
+    struct SemanticRecord* actual_record =process_primary(ast_Node->children->start,file_asm,symbols);
+    //FIJARME SI NO TENGO SECOND RECORD, ENTONCES NADA  MAS DEVUELVO
+    // DONDE QUEDO MI ACTUAL RECORD
 
 
 
@@ -734,16 +755,183 @@ void process_expression(struct NodeAST* ast_Node, FILE* file_asm
         }
         }
         enum  ASTNodeType operation_sign = ast_Node->children->start->next->type;
+        //SUMAR EL ACTUAL RECORD, CON EL SECON RECORD, HACER EL INFIX
+        // DEVOLVER DONDE QUEDO ESTE RESULTADO
+        struct SemanticRecord* second_record=process_primary(ast_Node->children->start->next->next,file_asm,symbols);
 
-        process_primary(ast_Node->children->start->next->next,file_asm,symbols);
-
-        //#GEN INFIX
+        return  genInfix(actual_record,operation_sign,second_record, file_asm, symbols);
         
     }
+    return actual_record;
     
 
 
 }
+char* int_to_string(int num) {
+   
+    int length = snprintf(NULL, 0, "%d", num);
+
+   
+    char* str = (char*)malloc((length + 1) * sizeof(char));
+    if (str == NULL) {
+        
+        return NULL;
+    }
+
+   
+    snprintf(str, length + 1, "%d", num);
+
+    return str;
+}
+
+const char* mov_stack_to_ebx_string ="mov ebx, [rsp + %d] \n ";
+ char* mov_stack_to_ebx(int position){
+    int stack_position= position*8;
+    int length = snprintf(NULL, 0, mov_stack_to_ebx_string, stack_position) + 1;
+
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, mov_stack_to_ebx_string, stack_position);
+
+    return formatted_string;
+}
+const char* mov_int_to_ebx_string ="mov ebx, %d \n ";
+ char* mov_int_to_ebx(int position){
+    
+    int length = snprintf(NULL, 0, mov_int_to_ebx_string, position) + 1;
+
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, mov_int_to_ebx_string, position);
+
+    return formatted_string;
+}
+
+const char* mov_int_to_ecx_string ="mov ecx, %d \n ";
+ char* mov_int_to_ecx(int position){
+    
+    int length = snprintf(NULL, 0, mov_int_to_ecx_string, position) + 1;
+
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, mov_int_to_ecx_string, position);
+
+    return formatted_string;
+}
+const char* get_temp_string ="TEMP&%d";
+ char* get_temp_name(int stack_position){
+    int temp= stack_position;
+    int length = snprintf(NULL, 0, get_temp_string, temp) + 1;
+
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, get_temp_string,temp);
+
+    return formatted_string;
+}
+const char* mov_stack_to_ecx_string ="mov ecx, [rsp + %d] \n ";
+ char* mov_stack_to_ecx(int position){
+    int stack_position= position*8;
+    int length = snprintf(NULL, 0, mov_stack_to_ecx_string, stack_position) + 1;
+
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, mov_stack_to_ecx_string, stack_position);
+
+    return formatted_string;
+}
+struct SemanticRecord* genInfix(struct SemanticRecord* first_record,enum  ASTNodeType operation_sign ,struct SemanticRecord* second_record, FILE* file,struct symbol_table* symbols){
+  enum SemanticToken first_token= first_record->semantic_record;
+  enum SemanticToken second_token= second_record->semantic_record;
+  
+
+
+  switch (first_token)
+  {
+  case ID_SEMANTIC:
+  case TEMP_RESULT_SEMANTIC:
+    
+    
+    fputs(mov_stack_to_ebx(first_record->semantic_info),file);
+    
+    break;
+    case LITERAL_SEMANTIC:
+    fputs(mov_int_to_ebx(first_record->semantic_info),file);
+    break;
+  
+  default:
+    break;
+  }
+  switch (second_token)
+  {
+  case ID_SEMANTIC:
+  case TEMP_RESULT_SEMANTIC:
+    
+    
+    fputs(mov_stack_to_ecx(second_record->semantic_info),file);
+    
+    break;
+    case LITERAL_SEMANTIC:
+     fputs(mov_int_to_ecx(second_record->semantic_info),file);
+    break;
+  
+  default:
+    break;
+  }
+
+  
+
+
+  if (operation_sign==PLUS_OP_AST)
+  {
+    fputs("suma [ebx] [ecx] \n push eax \n",file);
+    int new_stack_position = get_temp_int();
+    insert_symbol(symbols,get_temp_name(new_stack_position),new_stack_position);
+    //return el lugar donde quedarian
+    return create_record(TEMP_RESULT_SEMANTIC,new_stack_position);
+  }
+  if (operation_sign==MINUS_OP_AST)
+  {
+    fputs("resta [ebx] [ecx] \n push eax \n",file);
+     int new_stack_position = get_temp_int();
+    insert_symbol(symbols,get_temp_name(new_stack_position),new_stack_position);
+    return create_record(TEMP_RESULT_SEMANTIC,new_stack_position);
+  }
+  
+  return NULL;
+
+}
+
 void process_expression_list(struct NodeAST* ast_Node, FILE* file_asm
 ,struct symbol_table* symbols){
      if (!ast_Node->type== EXPRESSION_LIST_AST)
