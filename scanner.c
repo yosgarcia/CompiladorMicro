@@ -546,9 +546,30 @@ void gen_prefix(FILE* file_asm){
         "_start:\n";
         fputs(prefix,file_asm);
 }
-void process_id_statement(struct NodeAST* statement, FILE* file_asm
+void gen_sufix(FILE* file_asm){
+     fclose(file_asm);
+     printf("ASM Code generated correctly :D \n");
+
+}
+void process_id_statement(struct NodeAST* ast_Node, FILE* file_asm
 ,struct symbol_table* symbols){
-    //El nodo actual tiene STATEMENT
+
+    int stack_position = process_id(ast_Node->lexema,symbols);
+
+
+    if (!ast_Node->next->type !=  ASSIGN_OP_AST )
+    {
+        perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+        return;
+    }
+    if (!ast_Node->next->next  )
+    {
+        perror("EXPRESSION MISSING AFTER ASSIGN\n");
+        return;
+    }
+
+    process_expression(ast_Node->next->next,file_asm,symbols);
+    //#ASSIGN
 
 
 }
@@ -566,15 +587,24 @@ int process_id( char* var_name ,struct symbol_table* symbols){
 
 }
 
-void process_id_primary(){
-
+int process_id_primary( char* var_name ,struct symbol_table* symbols){
+ int var_id =find_symbol(symbols,var_name);
+  if (var_id==-1)
+  {
+    perror("ID has not been define, before its use on a primary expression");
+    return -1;
+  }
+  
+    
+    return var_id;
 }
 void read_id(){
 
 }
 void generate_read_id (FILE* file_asm,int pos_id){
 
-
+    //POR IMPLEMENTAR
+    printf("POR IMPLEMENTAR");
 
 }
 void process_id_list( struct NodeAST* ast_Node, FILE* file_asm
@@ -599,7 +629,7 @@ void process_id_list( struct NodeAST* ast_Node, FILE* file_asm
         var_id = process_id(next_id->lexema,symbols);
         generate_read_id(file_asm,var_id);
 
-        struct NodeAST* next_id = ast_Node->next;
+        struct NodeAST* next_id = next_id->next;
     }
     
 
@@ -617,16 +647,131 @@ void process_read_statement(struct NodeAST* ast_Node, FILE* file_asm
         perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
         return;
     }
-    process_id_list(ast_Node->next->children,file_asm);
+    process_id_list(ast_Node->next->children->start,file_asm,symbols);
 
 
     
 
 
 }
-void process_write_statement(struct NodeAST* statement, FILE* file_asm
+
+
+void add_op(struct NodeAST* ast_Node, FILE* file_asm
 ,struct symbol_table* symbols){
-    //El nodo actual tiene STATEMENT
+
+}
+void process_primary(struct NodeAST* ast_Node, FILE* file_asm
+,struct symbol_table* symbols){
+          if (!ast_Node->type== PRIMARY_AST)
+    {
+        perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+        return;
+    }
+    enum ASTNodeType primary_type= ast_Node->children->start->type;
+    switch (primary_type)
+    {
+    case ID_AST:
+
+        int stack_position =process_id_primary(ast_Node->children->start->lexema,symbols);
+        if (stack_position==-1)
+        {
+            perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+            return -1;
+        }
+        
+        // FUNCION QUE SE TRAIGA EL ID DEL STACK
+        break;
+    case INT_LITERAL_AST:
+        // FUNCION QUE PONGA EL INT EN ALGUN LADO PARA SUMARLO
+        
+        break;
+    case EXPRESSION_AST:
+        process_expression(ast_Node->children->start,file_asm,symbols);
+        break;
+    
+    default:
+        perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+        break;
+    }
+    
+    
+
+}
+void process_expression(struct NodeAST* ast_Node, FILE* file_asm
+,struct symbol_table* symbols){
+
+         if (!ast_Node->type== EXPRESSION_AST)
+    {
+        perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+        return;
+    }
+    process_primary(ast_Node->children->start,file_asm,symbols);
+   
+
+
+
+    // puede o no estar aka un while y aja
+    //{ add op  - primary #GENINFIX }
+    if (ast_Node->next)
+    {
+        if (ast_Node->next!=ADD_OP_AST)
+        {
+            perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+        }
+        
+        if (ast_Node->next->next)
+        {
+            if (ast_Node->next!=PRIMARY_AST)
+        {
+            perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+        }
+        }
+        enum  ASTNodeType operation_sign = ast_Node->next->children->start->type;
+
+        process_primary(ast_Node->next->next,file_asm,symbols);
+
+        //#GEN INFIX
+        
+    }
+    
+
+
+}
+void process_expression_list(struct NodeAST* ast_Node, FILE* file_asm
+,struct symbol_table* symbols){
+     if (!ast_Node->type== EXPRESSION_LIST_AST)
+    {
+        perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+        return;
+    }
+
+    process_expression(ast_Node->children->start,file_asm,symbols);
+    //WRITE EXPRESSION
+
+
+     struct NodeAST* next_expression = ast_Node->next;
+
+    while (next_expression)
+    {
+        process_expression(ast_Node->children->start,file_asm,symbols);
+        //write expression
+
+        struct NodeAST* next_expression = next_expression->next;
+    }
+
+
+
+
+}
+void process_write_statement(struct NodeAST* ast_Node, FILE* file_asm
+,struct symbol_table* symbols){
+    if (! (ast_Node->next->type !=  EXPRESSION_LIST_AST) )
+    {
+        perror("AST TREE DOES NOT FOLLOW CFG RULES\n");
+        return;
+    }
+    process_expression_list(ast_Node->next,file_asm,symbols);
+
 
 
 }
@@ -635,13 +780,13 @@ void process_statement(struct NodeAST* statement, FILE* file_asm,struct symbol_t
     switch (first_token)
     {
     case ID_AST:
-        process_id_statement(statement->children,file_asm,symbols);
+        process_id_statement(statement->children->start,file_asm,symbols);
         break;
     case READ_SYM_AST:
-         process_read_statement(statement->children,file_asm,symbols);
+         process_read_statement(statement->children->start,file_asm,symbols);
         break;
     case WRITE_SYM_AST:
-         process_write_statement(statement->children,file_asm,symbols);
+         process_write_statement(statement->children->start,file_asm,symbols);
         break;
     
     
@@ -652,7 +797,7 @@ void process_statement(struct NodeAST* statement, FILE* file_asm,struct symbol_t
 
 }
 void process_statement_list(FILE* file_asm, struct NodeAST* ast_Tree,struct symbol_table* symbols){
-     struct NodeAST* statement_temp = ast_Tree->children;
+     struct NodeAST* statement_temp = ast_Tree->children->start;
      while (statement_temp)
          {
             process_statement(statement_temp,file_asm, symbols);
@@ -676,6 +821,7 @@ void translator (struct NodeAST* ast_Tree){
     }
     gen_prefix(file_asm);
     process_statement_list(file_asm,ast_Tree,symbols);
+    gen_sufix(file_asm);
     
 
 
