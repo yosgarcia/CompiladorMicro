@@ -19,24 +19,26 @@ section .data
 section .text
    global _start
 _start:
-     mov qword [rsp - 0], 1 
-     mov qword [rsp - 0], 5 
-mov rbx, qword [rsp - 8] 
+     mov rax, 1 
+ push rax
+     mov rax, 5 
+ push rax
+mov rbx, qword [rsp + 0] 
  mov rcx, 2 
  resta rbx, rcx 
  push rax 
-mov rbx, qword [rsp - 24] 
- mov rcx, qword [rsp - 0] 
+mov rbx, qword [rsp + 16] 
+ mov rcx, qword [rsp + 0] 
  suma rbx,rcx 
  push rax 
-    mov rax, qword [rsp - 0] 
-      mov qword [rsp - 16], rax 
-mov rbx, qword [rsp - 40] 
+     mov rax, qword [rsp + 0] 
+ push rax
+mov rbx, qword [rsp + 32] 
  mov rcx, 5 
  resta rbx, rcx 
  push rax 
-    mov rax, qword [rsp - 0] 
-      mov qword [rsp - 8], rax 
+     mov rax, qword [rsp + 0] 
+ push rax
 mov eax,1
 mov ebx, 0
 int 80h

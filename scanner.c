@@ -599,7 +599,41 @@ void gen_sufix(FILE* file_asm){
      printf("ASM Code generated correctly :D \n");
 
 }
-const char* mov_literal_to_stack_string= "     mov qword [rsp - %d], %d \n";
+const char* create_var_from_literal_string= "     mov rax, %d \n push rax\n";
+ char* create_var_from_literal( int literal){
+    
+    int length = snprintf(NULL, 0, create_var_from_literal_string,  literal) + 1;
+
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, create_var_from_literal_string, literal);
+
+    return formatted_string;
+}
+const char* create_var_from_stack_string= "     mov rax, qword [rsp + %d] \n push rax\n";
+ char* create_var_from_stack( int position){
+    
+    int length = snprintf(NULL, 0, create_var_from_stack_string,  position) + 1;
+
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, create_var_from_stack_string, position);
+
+    return formatted_string;
+}
+const char* mov_literal_to_stack_string= "     mov qword [rsp + %d], %d \n";
  char* mov_literal_to_stack(int position, int literal){
     int stack_position= position;
     int length = snprintf(NULL, 0, mov_literal_to_stack_string, stack_position, literal) + 1;
@@ -616,7 +650,7 @@ const char* mov_literal_to_stack_string= "     mov qword [rsp - %d], %d \n";
 
     return formatted_string;
 }
-const char* mov_stack_to_stack_string="    mov rax, qword [rsp - %d] \n      mov qword [rsp - %d], rax \n";
+const char* mov_stack_to_stack_string="    mov rax, qword [rsp + %d] \n      mov qword [rsp + %d], rax \n";
 
  char* mov_stack_to_stack(int position_origin, int position_destination){
     int stack_position_origin= position_origin;
@@ -655,7 +689,7 @@ struct SemanticRecord* assign_id(struct SemanticRecord* expression_location,FILE
     //Escenario 4. La variable  esta asignada y su valor proximo es un Literal
 }
 
-struct SemanticRecord* create_id(struct SemanticRecord* expression_location,FILE* file_asm, struct symbol_table* symbols, int stack_position){
+struct SemanticRecord* create_id(struct SemanticRecord* expression_location,FILE* file_asm, struct symbol_table* symbols, int stack_position,char* var_name){
        /*int temp_pos = get_temp_int();
     insert_symbol(symbols,var_name,temp_pos);
     return temp_pos;// Nuevo id de la variable JIJIJIJa*/
@@ -663,17 +697,24 @@ struct SemanticRecord* create_id(struct SemanticRecord* expression_location,FILE
     //NO ESTA ASIGNADA Y ES UN LITERAL
     if (expression_location->semantic_record== LITERAL_SEMANTIC)
     {
-        char* assign_literal_to_id = (mov_literal_to_stack(get_stack_pos(symbols, stack_position),expression_location->semantic_info));
-        fputs(assign_literal_to_id,file_asm);
-        return create_record(ID_SEMANTIC,stack_position);
+
+        //create PUSH TEMP VAR
+        char* create_from_literal = (create_var_from_literal(expression_location->semantic_info));
+                int temp_pos = get_temp_int();
+        insert_symbol(symbols,var_name,temp_pos);
+        fputs(create_from_literal,file_asm);
+        return create_record(ID_SEMANTIC,temp_pos);
     }
    // NO ESTA ASIGNADA Y ES UN ID
     
+    //CREATE BAR FROM ID
     
     int expression_stack_position= expression_location->semantic_info;
-    char* assign_stack_to_stack = (mov_stack_to_stack(get_stack_pos(symbols,  expression_stack_position),get_stack_pos(symbols, stack_position)));
-    fputs(assign_stack_to_stack,file_asm);
-    return create_record(ID_SEMANTIC,stack_position);
+    char* create_var_with_stack = (create_var_from_stack(get_stack_pos(symbols,  expression_stack_position)));
+    int temp_pos = get_temp_int();
+    insert_symbol(symbols,var_name,temp_pos);
+    fputs(create_var_with_stack,file_asm);
+    return create_record(ID_SEMANTIC,temp_pos);
     //Escenario 1. La variable no esta asignada y su valor proximo es un ID O TEMP
     //Escenario 2. La variable esta asignada y su valor proximo es un ID O TEMP
     //Escenario 3. La variable no esta asignada y su valor proximo es un Literal
@@ -699,7 +740,7 @@ void process_id_statement(struct NodeAST* ast_Node, FILE* file_asm
     struct SemanticRecord* expression_information = process_expression(ast_Node->next->next,file_asm,symbols);
     if (stack_position==-1)
     {
-         struct SemanticRecord* assign_record = create_id(expression_information,file_asm,symbols, stack_position);
+         struct SemanticRecord* assign_record = create_id(expression_information,file_asm,symbols, stack_position,ast_Node->lexema);
     }
     else{
     struct SemanticRecord* assign_record = assign_id(expression_information,file_asm,symbols, stack_position);
@@ -905,7 +946,7 @@ char* int_to_string(int num) {
     return str;
 }
 
-const char* mov_stack_to_ebx_string ="mov rbx, qword [rsp - %d] \n ";
+const char* mov_stack_to_ebx_string ="mov rbx, qword [rsp + %d] \n ";
  char* mov_stack_to_ebx(int position){
     int stack_position= position;
     int length = snprintf(NULL, 0, mov_stack_to_ebx_string, stack_position) + 1;
@@ -974,7 +1015,7 @@ const char* get_temp_string ="TEMP&%d";
 
     return formatted_string;
 }
-const char* mov_stack_to_ecx_string ="mov rcx, qword [rsp - %d] \n ";
+const char* mov_stack_to_ecx_string ="mov rcx, qword [rsp + %d] \n ";
  char* mov_stack_to_ecx(int position){
     int stack_position= position;
     int length = snprintf(NULL, 0, mov_stack_to_ecx_string, stack_position) + 1;
