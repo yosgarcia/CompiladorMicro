@@ -125,6 +125,7 @@ struct trie_node* create_symbol_node(char letter){
 struct symbol_table* create_symbol_table(){
     struct symbol_table* new_table = calloc(1, sizeof(struct symbol_table));
     new_table->root = create_symbol_node(' ');
+    new_table->max_i=-1;
     return new_table;
 }
 
@@ -160,6 +161,7 @@ void insert_symbol(struct symbol_table* table, char* word, int num){
         current = letter;
     }
     current->is_end_of_word = num;
+    table->max_i+=1;
 }
 
 
@@ -175,5 +177,6 @@ int find_symbol(struct symbol_table* table, char* word){
         }
         current = letter;
     }
+    
     return current->is_end_of_word;
 }

@@ -83,7 +83,8 @@ struct double_node {
 struct double_linked_list {
     struct double_node* start;
 };
-
+struct SemanticRecord* process_expression(struct NodeAST* ast_Node, FILE* file_asm ,struct symbol_table* symbols);
+struct SemanticRecord* genInfix(struct SemanticRecord* first_record,enum  ASTNodeType operation_sign ,struct SemanticRecord* second_record, FILE* file,struct symbol_table* symbols);
 void expression(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent);
 void add_op(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent);
 void primary(FILE* file, struct double_linked_list* tokens, struct NodeAST* parent);
@@ -101,8 +102,8 @@ struct trie_node *root;
 struct SemanticRecord* create_record(enum SemanticToken token, int semantic_info){
     struct SemanticRecord* new_record = calloc(1,sizeof(struct SemanticRecord));
     new_record->semantic_record= token;
-    new_record->semantic_info;
-    return semantic_info;
+    new_record->semantic_info=semantic_info;
+    return new_record;
 
 }
 
@@ -176,7 +177,10 @@ struct double_linked_list* create_double_linked_list() {
     new_list->start = NULL;
     return new_list;
 }
+int get_stack_pos(struct symbol_table* symbols, int id_var){
+    return (8*symbols->max_i)-8*id_var;
 
+}
 struct double_linked_list* add_node_to_list(struct double_linked_list* list, struct content* content) {
     
     struct double_node* temp= list->start;
@@ -557,15 +561,123 @@ int get_temp_int(){
 
 void gen_prefix(FILE* file_asm){
      const char *prefix = 
-         "section .text\n"
-        "global _start\n"
+     "%macro imprimeEnPantalla 2\n"
+        "   mov     eax, 4         \n"
+        "   mov     ebx, 1            \n"
+        "   mov     ecx, %1               \n"
+        "   mov     edx, %2                \n"
+        "   int     0x80\n"
+        "%endmacro\n"
+       
+"%macro suma 2\n"
+    "   mov rax, %1      ; Mueve el primer argumento a eax\n"
+    "   add rax, %2      ; Suma el segundo argumento a eax\n"
+"%endmacro\n"
+
+
+"%macro resta 2\n"
+  "  mov rax, %1      ; Mueve el primer argumento a eax\n"
+   " sub rax, %2      ; Resta el segundo argumento a eax\n"
+"%endmacro\n"
+     "section .data\n"
+    "   msg db \"Input value: \", 0\n"
+    "   msglen equ $ - msg\n"
+        "section .text\n"
+        "   global _start\n"
         "_start:\n";
+        
         fputs(prefix,file_asm);
 }
 void gen_sufix(FILE* file_asm){
+       const char *sufix = 
+     "mov eax,1\n"
+     "mov ebx, 0\n"
+     "int 80h\n";
+        
+       fputs(sufix,file_asm);
      fclose(file_asm);
      printf("ASM Code generated correctly :D \n");
 
+}
+const char* mov_literal_to_stack_string= "     mov qword [rsp - %d], %d \n";
+ char* mov_literal_to_stack(int position, int literal){
+    int stack_position= position;
+    int length = snprintf(NULL, 0, mov_literal_to_stack_string, stack_position, literal) + 1;
+
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, mov_literal_to_stack_string, stack_position,literal);
+
+    return formatted_string;
+}
+const char* mov_stack_to_stack_string="    mov rax, qword [rsp - %d] \n      mov qword [rsp - %d], rax \n";
+
+ char* mov_stack_to_stack(int position_origin, int position_destination){
+    int stack_position_origin= position_origin;
+    int stack_position_destination= position_destination;
+    int length = snprintf(NULL, 0, mov_stack_to_stack_string, stack_position_origin, stack_position_destination) + 1;
+
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, mov_stack_to_stack_string, stack_position_origin,stack_position_destination);
+
+    return formatted_string;
+}
+struct SemanticRecord* assign_id(struct SemanticRecord* expression_location,FILE* file_asm, struct symbol_table* symbols, int stack_position){
+    if (expression_location->semantic_record== LITERAL_SEMANTIC)
+    {
+        char* assign_literal_to_id = (mov_literal_to_stack(get_stack_pos(symbols, stack_position),expression_location->semantic_info));
+        fputs(assign_literal_to_id,file_asm);
+        return create_record(ID_SEMANTIC,stack_position);
+    }
+    //ASIGNAR A STACK POSITION EL VALOR DE EXPRESSION LOCATION
+    
+    
+    int expression_stack_position= expression_location->semantic_info;
+    char* assign_stack_to_stack = (mov_stack_to_stack(get_stack_pos(symbols,  expression_stack_position),get_stack_pos(symbols, stack_position)));
+    fputs(assign_stack_to_stack,file_asm);
+    return create_record(ID_SEMANTIC,stack_position);
+    //Escenario 1. La variable no esta asignada y su valor proximo es un ID O TEMP
+    //Escenario 2. La variable esta asignada y su valor proximo es un ID O TEMP
+    //Escenario 3. La variable no esta asignada y su valor proximo es un Literal
+    //Escenario 4. La variable  esta asignada y su valor proximo es un Literal
+}
+
+struct SemanticRecord* create_id(struct SemanticRecord* expression_location,FILE* file_asm, struct symbol_table* symbols, int stack_position){
+       /*int temp_pos = get_temp_int();
+    insert_symbol(symbols,var_name,temp_pos);
+    return temp_pos;// Nuevo id de la variable JIJIJIJa*/
+
+    //NO ESTA ASIGNADA Y ES UN LITERAL
+    if (expression_location->semantic_record== LITERAL_SEMANTIC)
+    {
+        char* assign_literal_to_id = (mov_literal_to_stack(get_stack_pos(symbols, stack_position),expression_location->semantic_info));
+        fputs(assign_literal_to_id,file_asm);
+        return create_record(ID_SEMANTIC,stack_position);
+    }
+   // NO ESTA ASIGNADA Y ES UN ID
+    
+    
+    int expression_stack_position= expression_location->semantic_info;
+    char* assign_stack_to_stack = (mov_stack_to_stack(get_stack_pos(symbols,  expression_stack_position),get_stack_pos(symbols, stack_position)));
+    fputs(assign_stack_to_stack,file_asm);
+    return create_record(ID_SEMANTIC,stack_position);
+    //Escenario 1. La variable no esta asignada y su valor proximo es un ID O TEMP
+    //Escenario 2. La variable esta asignada y su valor proximo es un ID O TEMP
+    //Escenario 3. La variable no esta asignada y su valor proximo es un Literal
+    //Escenario 4. La variable  esta asignada y su valor proximo es un Literal
 }
 void process_id_statement(struct NodeAST* ast_Node, FILE* file_asm
 ,struct symbol_table* symbols){
@@ -584,18 +696,25 @@ void process_id_statement(struct NodeAST* ast_Node, FILE* file_asm
         return;
     }
 
-    process_expression(ast_Node->next->next,file_asm,symbols);
-    //#ASSIGN
+    struct SemanticRecord* expression_information = process_expression(ast_Node->next->next,file_asm,symbols);
+    if (stack_position==-1)
+    {
+         struct SemanticRecord* assign_record = create_id(expression_information,file_asm,symbols, stack_position);
+    }
+    else{
+    struct SemanticRecord* assign_record = assign_id(expression_information,file_asm,symbols, stack_position);
 
+}
 
 }
 int process_id( char* var_name ,struct symbol_table* symbols){
    int var_id =find_symbol(symbols,var_name);
   if (var_id==-1)
   {
-    int temp_pos = get_temp_int();
+    return -1;
+   /*int temp_pos = get_temp_int();
     insert_symbol(symbols,var_name,temp_pos);
-    return temp_pos;// Nuevo id de la variable JIJIJIJa
+    return temp_pos;// Nuevo id de la variable JIJIJIJa*/
   }
   
     
@@ -701,12 +820,13 @@ struct SemanticRecord* process_primary(struct NodeAST* ast_Node, FILE* file_asm
             perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS PRIMARY");
             return -1;
         }
+
         
-         record =create_record(primary_type,stack_position);
+         record =create_record(ID_SEMANTIC,stack_position);
         return record;
         break;
     case INT_LITERAL_AST:
-         record =create_record(primary_type,atoi(ast_Node->children->start->lexema));
+         record =create_record(LITERAL_SEMANTIC,atoi(ast_Node->children->start->lexema));
         return record;
         
         break;
@@ -742,6 +862,7 @@ struct SemanticRecord* process_expression(struct NodeAST* ast_Node, FILE* file_a
     
     if (ast_Node->children->start->next!=NULL)
     {
+           printf("CRASH BEFORE GEN INFIX \n");
         if (ast_Node->children->start->next->type!=ADD_OP_AST)
         {
             perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS EXPRESION ADD OP IF");
@@ -754,7 +875,7 @@ struct SemanticRecord* process_expression(struct NodeAST* ast_Node, FILE* file_a
             perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS EXPRESION NEXT NEXT ADD OP IF");
         }
         }
-        enum  ASTNodeType operation_sign = ast_Node->children->start->next->type;
+        enum  ASTNodeType operation_sign = ast_Node->children->start->next->children->start->type;
         //SUMAR EL ACTUAL RECORD, CON EL SECON RECORD, HACER EL INFIX
         // DEVOLVER DONDE QUEDO ESTE RESULTADO
         struct SemanticRecord* second_record=process_primary(ast_Node->children->start->next->next,file_asm,symbols);
@@ -784,9 +905,9 @@ char* int_to_string(int num) {
     return str;
 }
 
-const char* mov_stack_to_ebx_string ="mov ebx, [rsp + %d] \n ";
+const char* mov_stack_to_ebx_string ="mov rbx, qword [rsp - %d] \n ";
  char* mov_stack_to_ebx(int position){
-    int stack_position= position*8;
+    int stack_position= position;
     int length = snprintf(NULL, 0, mov_stack_to_ebx_string, stack_position) + 1;
 
     
@@ -801,7 +922,7 @@ const char* mov_stack_to_ebx_string ="mov ebx, [rsp + %d] \n ";
 
     return formatted_string;
 }
-const char* mov_int_to_ebx_string ="mov ebx, %d \n ";
+const char* mov_int_to_ebx_string ="mov rbx, %d \n ";
  char* mov_int_to_ebx(int position){
     
     int length = snprintf(NULL, 0, mov_int_to_ebx_string, position) + 1;
@@ -819,7 +940,7 @@ const char* mov_int_to_ebx_string ="mov ebx, %d \n ";
     return formatted_string;
 }
 
-const char* mov_int_to_ecx_string ="mov ecx, %d \n ";
+const char* mov_int_to_ecx_string ="mov rcx, %d \n ";
  char* mov_int_to_ecx(int position){
     
     int length = snprintf(NULL, 0, mov_int_to_ecx_string, position) + 1;
@@ -853,9 +974,9 @@ const char* get_temp_string ="TEMP&%d";
 
     return formatted_string;
 }
-const char* mov_stack_to_ecx_string ="mov ecx, [rsp + %d] \n ";
+const char* mov_stack_to_ecx_string ="mov rcx, qword [rsp - %d] \n ";
  char* mov_stack_to_ecx(int position){
-    int stack_position= position*8;
+    int stack_position= position;
     int length = snprintf(NULL, 0, mov_stack_to_ecx_string, stack_position) + 1;
 
     
@@ -870,9 +991,17 @@ const char* mov_stack_to_ecx_string ="mov ecx, [rsp + %d] \n ";
 
     return formatted_string;
 }
+
 struct SemanticRecord* genInfix(struct SemanticRecord* first_record,enum  ASTNodeType operation_sign ,struct SemanticRecord* second_record, FILE* file,struct symbol_table* symbols){
+   
+  
+   
   enum SemanticToken first_token= first_record->semantic_record;
+
   enum SemanticToken second_token= second_record->semantic_record;
+  printf("Hola %d\n",first_token);
+
+
   
 
 
@@ -882,7 +1011,7 @@ struct SemanticRecord* genInfix(struct SemanticRecord* first_record,enum  ASTNod
   case TEMP_RESULT_SEMANTIC:
     
     
-    fputs(mov_stack_to_ebx(first_record->semantic_info),file);
+    fputs(mov_stack_to_ebx(get_stack_pos(symbols, first_record->semantic_info)),file);
     
     break;
     case LITERAL_SEMANTIC:
@@ -892,13 +1021,14 @@ struct SemanticRecord* genInfix(struct SemanticRecord* first_record,enum  ASTNod
   default:
     break;
   }
+
   switch (second_token)
   {
   case ID_SEMANTIC:
   case TEMP_RESULT_SEMANTIC:
     
     
-    fputs(mov_stack_to_ecx(second_record->semantic_info),file);
+    fputs(mov_stack_to_ecx(get_stack_pos(symbols, second_record->semantic_info)),file);
     
     break;
     case LITERAL_SEMANTIC:
@@ -910,24 +1040,31 @@ struct SemanticRecord* genInfix(struct SemanticRecord* first_record,enum  ASTNod
   }
 
   
-
+  
 
   if (operation_sign==PLUS_OP_AST)
   {
-    fputs("suma [ebx] [ecx] \n push eax \n",file);
+      
+    fputs("suma rbx,rcx \n push rax \n",file);
+       
     int new_stack_position = get_temp_int();
+       
     insert_symbol(symbols,get_temp_name(new_stack_position),new_stack_position);
     //return el lugar donde quedarian
+
     return create_record(TEMP_RESULT_SEMANTIC,new_stack_position);
   }
   if (operation_sign==MINUS_OP_AST)
   {
-    fputs("resta [ebx] [ecx] \n push eax \n",file);
+    
+    fputs("resta rbx, rcx \n push rax \n",file);
      int new_stack_position = get_temp_int();
+     
     insert_symbol(symbols,get_temp_name(new_stack_position),new_stack_position);
+   
     return create_record(TEMP_RESULT_SEMANTIC,new_stack_position);
   }
-  
+  printf("%d\n", operation_sign);
   return NULL;
 
 }

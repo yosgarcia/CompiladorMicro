@@ -38,6 +38,7 @@ struct linked_list {
 
 struct symbol_table {
     struct trie_node* root;
+    int max_i;
 };
 
 
