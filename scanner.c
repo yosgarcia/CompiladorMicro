@@ -9,7 +9,7 @@
 #define MAX_WORD_SIZE 32
 
 
-
+//Enumeracion que indica el tipo de información de un record semántico
 enum SemanticToken
 {
     LITERAL_SEMANTIC,
@@ -17,28 +17,128 @@ enum SemanticToken
     TEMP_RESULT_SEMANTIC,
     EXPRESSION_RESULT_SEMANTIC
 };
+//Estructura que contiene un ENUM que indica su tipo de record semántico
+//En el caso de expresiones y IDs, tiene en su entero su posición en el stack
+//En el caso de los literales, contiene su valor
 struct SemanticRecord
 {
     enum SemanticToken semantic_record;
     int semantic_info;
 };
 
-
+/*
+ * Funcion: Procesa una expresión y devuelve un record semántico con su posición en la pila
+ * @param ast_Node: Nodo del arbol ast con la información de la expresión
+ * @param file_asm: Archivo donde se está escribiendo el codigo asm
+ * @param symbols: Tabla de símbolos 
+ * @return SemanticRecord: recordSemántico con la información de la expresión
+*/
 struct SemanticRecord *process_expression(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_table *symbols);
+/*
+ * Funcion: Función que procesa 2 records semánticos y genera el código para operarlos
+ * @param first_record: Primer record a procesar
+ * @param operation_sign: Enum de suma o resta, con el cual se decide que operación generar.
+ * @param second_record: Segundo record a procesar 
+ * @return SemanticRecord: recordSemántico con la posición de donde quedó el resultado de la operación en el stack.
+*/
 struct SemanticRecord *genInfix(struct SemanticRecord *first_record, enum ASTNodeType operation_sign, struct SemanticRecord *second_record, FILE *file, struct symbol_table *symbols);
+
+
+/*
+ * Funcion: Regla de producción Expression con la que se parsean las expresiones y se genera su registro en el arbol ast
+ * @param file: Archivo con el código de micro
+ * @param tokens : Lista que contiene los tokens por procesar, para validar la gramática
+ * @param parent: Nodo padre del arbol ast.
+*/
 void expression(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent);
+
+/*
+ * Funcion: Regla de producción addop con la que se parsean las expresiones y se genera su registro en el arbol ast
+ * @param file: Archivo con el código de micro
+ * @param tokens : Lista que contiene los tokens por procesar, para validar la gramática
+ * @param parent: Nodo padre del arbol ast.
+*/
 void add_op(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent);
+
+/*
+ * Funcion: Regla de producción primary con la que se parsean las sumas y restas y se genera su registro en el arbol ast
+ * @param file: Archivo con el código de micro
+ * @param tokens : Lista que contiene los tokens por procesar, para validar la gramática
+ * @param parent: Nodo padre del arbol ast.
+*/
 void primary(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent);
+/*
+ * Funcion: Regla de producción expression list con la que se parsean los primarios (literales, ids y sumas) y se genera su registro en el arbol ast
+ * @param file: Archivo con el código de micro
+ * @param tokens : Lista que contiene los tokens por procesar, para validar la gramática
+ * @param parent: Nodo padre del arbol ast.
+*/
 void expression_list(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent);
+
+/*
+ * Funcion: Regla de producción id_list con la que se parsean las listas de identificadores y se genera su registro en el arbol ast
+ * @param file: Archivo con el código de micro
+ * @param tokens : Lista que contiene los tokens por procesar, para validar la gramática
+ * @param parent: Nodo padre del arbol ast.
+*/
 void id_list(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent);
+/*
+ * Funcion: Regla de producción statement con la que se parsean los statement y se genera su registro en el arbol ast
+ * @param file: Archivo con el código de micro
+ * @param tokens : Lista que contiene los tokens por procesar, para validar la gramática
+ * @param parent: Nodo padre del arbol ast.
+*/
+
 void statement(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent);
+/*
+ * Funcion: Regla de producción statement_list con la que se parsean los statement list y se genera su registro en el arbol ast
+ * @param file: Archivo con el código de micro
+ * @param tokens : Lista que contiene los tokens por procesar, para validar la gramática
+ * @param parent: Nodo padre del arbol ast.
+*/
 void statement_list(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent);
+
+/*
+ * Funcion: Regla de producción program la cual inicia el parseo despues de un begin
+ * @param file: Archivo con el código de micro
+ * @param tokens : Lista que contiene los tokens por procesar, para validar la gramática
+
+*/
 struct NodeAST *program(FILE *file, struct double_linked_list *tokens);
+/*
+ * Funcion: Regla de producción program la cual inicia el parseo de tokens
+ * @param file: Archivo con el código de micro
+ * @param tokens : Lista que contiene los tokens por procesar, para validar la gramática
+
+*/
 struct NodeAST *system_goal(FILE *file, struct double_linked_list *tokens);
+/*
+ * Funcion: Procesa un id, en una operación de asignación. Asigna una posición del stack o devuelve 
+ * se el id ya posee una
+ * @param var_name: Nombre de la variable
+ * @param symbols: Tabla de simbolos
+ * @param return: El id nuevo de la variable, o su id propio en caso de que ya existiera.
+*/
 int process_id(char *var_name, struct symbol_table *symbols);
+/*
+ * Funcion: Crea un struct de record semántico
+ * @param semanticToken: El tipo de Semantica del record a crear, ID, TEMP o LITERAL
+ * @param semantic_info: Informacion del record, valor literal en caso de LITERALES, o posición en el stack
+ *  en los demas casos
+ * @param return: La estructura de record semántico.
+*/
 struct SemanticRecord *create_record(enum SemanticToken, int semantic_info);
+
+//Variable globar del arbol trie de las palabras reservadas/
 struct trie_node *root;
 
+/*
+ * Funcion: Crea un struct de record semántico
+ * @param semanticToken: El tipo de Semantica del record a crear, ID, TEMP o LITERAL
+ * @param semantic_info: Informacion del record, valor literal en caso de LITERALES, o posición en el stack
+ *  en los demas casos
+ * @param return: La estructura de record semántico.
+*/
 struct SemanticRecord *create_record(enum SemanticToken token, int semantic_info)
 {
     struct SemanticRecord *new_record = calloc(1, sizeof(struct SemanticRecord));
@@ -48,14 +148,23 @@ struct SemanticRecord *create_record(enum SemanticToken token, int semantic_info
 }
 
 
-
+/*
+ * Funcion: Devuelve la posición de una variable en el stack, en función de la cantidad de variables creadas y su id referencial
+ * @param symbols: Tabla de simbolos
+ * @param id_var: Id referencial de la variable en el stack
+ * @param return: La posición exacta de la variable en el stack.
+*/
 int get_stack_pos(struct symbol_table *symbols, int id_var)
 {
     return (8 * symbols->max_i) - 8 * id_var;
 }
 
 
-
+/*
+ * Funcion: Convierte un caracter a puntero
+ * @param c: El caracter a convertir
+ * @param return: El puntero al caracter
+*/
 char *char_to_string(char c)
 {
     char *str = calloc(2, sizeof(char));
@@ -63,7 +172,11 @@ char *char_to_string(char c)
     str[1] = '\0';
     return str;
 }
-
+/*
+ * Funcion: Función que scannea el siguiente token de el archivo de código micro
+ * @param file: El puntero al filestream del archivo micro
+ * @param return: Un struct content con la información del token detectado
+*/
 struct content *scanner(FILE *file)
 {
     char current_Char;
@@ -149,18 +262,32 @@ struct content *scanner(FILE *file)
     return create_content(EOF_SYM, "EOF");
 }
 
+
+/*
+ * Funcion: FUnción que indica un error de syntaxys y sale de las llamadas con un codigo 1
+ * @param token: El token que llegó de manera inesperada
+*/
 void syntax_error(enum TokenType token)
 {
     printf("Syntax Error: Unexpected token %d\n", token);
     exit(1);
 }
 
+/*
+ * Funcion: Funcion que añade un token a la lista de tokens
+ * @param file: Filestream del archivo con el código micro.
+ * @param tokens: Lista de tokens detectados
+*/
 void next_token(FILE *file, struct double_linked_list *tokens)
 {
 
     add_node_to_list(tokens, scanner(file));
 }
-
+/*
+ * Funcion: Función que realiza un match de un token esperado con el primero de la lista de tokens
+ * @param expectedToken: El token que se espera recibir
+ * @param tokens: La lista de tokens
+*/
 void match(enum TokenType expectedToken, struct double_linked_list *tokens)
 {
     if (expectedToken == tokens->start->content->token)
@@ -173,6 +300,12 @@ void match(enum TokenType expectedToken, struct double_linked_list *tokens)
     }
 }
 
+/*
+ * Funcion: Funcion que procesa un nodoAST de addOp
+ * @param file: El filestream del programa en micro
+ * @param tokens: Lista de tokens
+ * @param parent: El padre del arbol ast
+*/
 void add_op(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent)
 {
     next_token(file, tokens);
@@ -192,6 +325,12 @@ void add_op(FILE *file, struct double_linked_list *tokens, struct NodeAST *paren
     }
 }
 
+/*
+ * Funcion: Funcion que procesa una expresión primaria y las añade al arbol ast
+ * @param file: El filestream del programa en micro
+ * @param tokens: Lista de tokens
+ * @param parent: El padre del arbol ast
+*/
 void primary(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent)
 {
 
@@ -227,7 +366,12 @@ void primary(FILE *file, struct double_linked_list *tokens, struct NodeAST *pare
         syntax_error(tokens->start->content->token);
     }
 }
-
+/*
+ * Funcion: Funcion que procesa una expresión y las añade al arbol ast
+ * @param file: El filestream del programa en micro
+ * @param tokens: Lista de tokens
+ * @param parent: El padre del arbol ast
+*/
 void expression(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent)
 {
     struct NodeAST *new_primary_node = create_and_add_node(PRIMARY_AST, "PRIMARY", parent);
@@ -247,7 +391,12 @@ void expression(FILE *file, struct double_linked_list *tokens, struct NodeAST *p
         return;
     }
 }
-
+/*
+ * Funcion: Funcion que procesa una lista de expresiones y las añade al arbol ast
+ * @param file: El filestream del programa en micro
+ * @param tokens: Lista de tokens
+ * @param parent: El padre del arbol ast
+*/
 void expression_list(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent)
 {
     struct NodeAST *expression_node = create_and_add_node(EXPRESSION_AST, "EXPRESSION", parent);
@@ -268,6 +417,12 @@ void expression_list(FILE *file, struct double_linked_list *tokens, struct NodeA
     }
 }
 
+/*
+ * Funcion: Funcion que procesa una lista de ids y las añade al arbol ast
+ * @param file: El filestream del programa en micro
+ * @param tokens: Lista de tokens
+ * @param parent: El padre del arbol ast
+*/
 void id_list(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent)
 {
     next_token(file, tokens);
@@ -289,7 +444,12 @@ void id_list(FILE *file, struct double_linked_list *tokens, struct NodeAST *pare
         }
     }
 }
-
+/*
+ * Funcion: Funcion que procesa un statement primaria y las añade al arbol ast
+ * @param file: El filestream del programa en micro
+ * @param tokens: Lista de tokens
+ * @param parent: El padre del arbol ast
+*/
 void statement(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent)
 {
     switch (tokens->start->content->token)
@@ -342,6 +502,12 @@ void statement(FILE *file, struct double_linked_list *tokens, struct NodeAST *pa
     }
 }
 
+/*
+ * Funcion: Funcion que procesa una lista de statement y las añade al arbol ast
+ * @param file: El filestream del programa en micro
+ * @param tokens: Lista de tokens
+ * @param parent: El padre del arbol ast
+*/
 void statement_list(FILE *file, struct double_linked_list *tokens, struct NodeAST *parent)
 {
     next_token(file, tokens);
@@ -370,7 +536,12 @@ void statement_list(FILE *file, struct double_linked_list *tokens, struct NodeAS
         }
     }
 }
-
+/*
+ * Funcion: Funcion que inicia la creación del arbol ast.
+ * @param file: El filestream del programa en micro
+ * @param tokens: Lista de tokens
+ * @param return La raiz del arbol ast.
+*/
 struct NodeAST *program(FILE *file, struct double_linked_list *tokens)
 {
     next_token(file, tokens);
@@ -383,6 +554,12 @@ struct NodeAST *program(FILE *file, struct double_linked_list *tokens)
     return root;
 }
 
+/*
+ * Funcion: Funcion que llama a la iniciacion del arbol ast, y despues verifica que no hayan mas tokens
+ * @param file: El filestream del programa en micro
+ * @param tokens: Lista de tokens
+ * @param return La raiz del arbol ast.
+*/
 struct NodeAST *system_goal(FILE *file, struct double_linked_list *tokens)
 {
     struct NodeAST *root = program(file, tokens);
@@ -390,12 +567,21 @@ struct NodeAST *system_goal(FILE *file, struct double_linked_list *tokens)
     match(EOF_SYM, tokens);
     return root;
 }
+/*
+ * Funcion: Funcion que devuelva el proximo id de variable a crear. Este id representa que es la id+1 variable creada. Ademas 
+ * este id se utiliza para calcular su posicion en en el stack
+
+ * @return El siguiente id a ser utlizado
+*/
 int get_temp_int()
 {
     static int counter = -1;
     return ++counter;
 }
-
+/*
+ * Funcion: Funcion que escribe el prefijo en el archivo de código ensamblador.
+ * @param file: El filestream del archivo del programa en micro
+*/
 void gen_prefix(FILE *file_asm)
 {
     const char *prefix =
@@ -554,7 +740,10 @@ void gen_prefix(FILE *file_asm)
     fputs(prefix4, file_asm);
 }
 
-
+/*
+ * Funcion: Funcion que escribe el sufijo en el archivo de código ensamblador.
+ * @param file: El filestream del archivo del programa en micro
+*/
 void gen_sufix(FILE *file_asm)
 {
     const char *sufix =
@@ -570,6 +759,12 @@ void gen_sufix(FILE *file_asm)
 
 
 const char *create_var_from_literal_string = "  mov rax, %d \n   push rax\n";
+
+/*
+ * Funcion: Funcion que genera el string para crear una variable en el stack a partir de un literal.
+ * @param literal: El valor literal de la variable
+ * @return El string formateado
+*/
 char *create_var_from_literal(int literal)
 {
     int length = snprintf(NULL, 0, create_var_from_literal_string, literal) + 1;
@@ -586,6 +781,11 @@ char *create_var_from_literal(int literal)
 
 
 const char *create_var_from_stack_string = "    mov rax, qword [rsp + %d] \n   push rax\n";
+/*
+ * Funcion: Funcion que genera el string para crear una variable en el stack a partir de otra posición en el stack.
+ * @param literal: La posición en el stack de la variable que servirá de referencia
+ * @return El string formateado
+*/
 char *create_var_from_stack(int position)
 {
 
@@ -604,6 +804,12 @@ char *create_var_from_stack(int position)
 
 
 const char *mov_literal_to_stack_string = "     mov qword [rsp + %d], %d \n";
+/*
+ * Funcion: Funcion que genera el string para asigar una variable en el stack un valor literal.
+ * @param literal: El valor literal de la variable
+ * @param position: La posición en el stack de la variable que va a ser asignada.
+ * @return El string formateado
+*/
 char *mov_literal_to_stack(int position, int literal)
 {
     int stack_position = position;
@@ -622,7 +828,12 @@ char *mov_literal_to_stack(int position, int literal)
 
 
 const char *mov_stack_to_stack_string = "    mov rax, qword [rsp + %d] \n   mov qword [rsp + %d], rax \n";
-
+/*
+ * Funcion: Funcion que genera el string para asignar una variable en el stack el valor de otra variable.
+ * @param position_origin: La posición en el stack del valor de origen
+ * @param position_destination: La posición en el stack del valor de destino
+ * @return El string formateado
+*/
 char *mov_stack_to_stack(int position_origin, int position_destination)
 {
     int stack_position_origin = position_origin;
@@ -640,6 +851,14 @@ char *mov_stack_to_stack(int position_origin, int position_destination)
 }
 
 
+/*
+ * Funcion: Funcion que escribe en un archivo el código para asignar un valor a una variable.
+ * @param expression_location: El record semantico con la información del valor que será asignado
+ * @param file_asm: El filestream donde se escribirá el codigo
+ * @param symbols: La tabla de simbolos
+ * @param stack_position: La posicion del stack donde irá este valor.
+ * @return El string formateado
+*/
 struct SemanticRecord *assign_id(struct SemanticRecord *expression_location, FILE *file_asm, struct symbol_table *symbols, int stack_position)
 {
     if (expression_location->semantic_record == LITERAL_SEMANTIC)
@@ -654,6 +873,15 @@ struct SemanticRecord *assign_id(struct SemanticRecord *expression_location, FIL
     return create_record(ID_SEMANTIC, stack_position);
 }
 
+/*
+ * Funcion: Funcion que escribe en un archivo el código paracrear una variable.
+ * @param expression_location: El record semantico con la información del valor que será asignado
+ * @param file_asm: El filestream donde se escribirá el codigo
+ * @param symbols: La tabla de simbolos
+ * @param stack_position: La posicion del stack donde irá este valor.
+ * @param var_name: El nombre de la variabel
+ * @return El string formateado
+*/
 struct SemanticRecord *create_id(struct SemanticRecord *expression_location, FILE *file_asm, struct symbol_table *symbols, int stack_position, char *var_name)
 {
     if (expression_location->semantic_record == LITERAL_SEMANTIC)
@@ -672,7 +900,13 @@ struct SemanticRecord *create_id(struct SemanticRecord *expression_location, FIL
     return create_record(ID_SEMANTIC, temp_pos);
 }
 
+/*
+ * Funcion: Funcion que procesa un statement de asignacion de id.
+ * @param ast_Node: Nodo del arbol ast con la infomacion necesaria 
+ * @param file_asm: El filestream donde se escribirá el codigo
+ * @param symbols: La tabla de simbolos
 
+*/
 void process_id_statement(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_table *symbols)
 {
 
@@ -700,7 +934,10 @@ void process_id_statement(struct NodeAST *ast_Node, FILE *file_asm, struct symbo
     }
 }
 
-
+/*
+ * Funcion: Funcion busca un nombre en la tabla de simbolos y devuelve su posición
+ * @return La posición relativa de la variable en el stack, o -1 si esta no existe.
+*/
 int process_id(char *var_name, struct symbol_table *symbols)
 {
     int var_id = find_symbol(symbols, var_name);
@@ -712,7 +949,12 @@ int process_id(char *var_name, struct symbol_table *symbols)
     return var_id;
 }
 
-
+/*
+ * Funcion: Funcion que procesa un id en una expresión primaria. 
+ * @param var_name : Nombre de la variable a buscar en la table
+ * @param symbols: Tabla de simbolos
+ * @return La posición relativa de la variable en el stack, o -1 si esta no existe y por ende la expresión primaria es incorrecta.
+*/
 int process_id_primary(char *var_name, struct symbol_table *symbols)
 {
     int var_id = find_symbol(symbols, var_name);
@@ -734,6 +976,11 @@ const char *read_old_id_string = "  leeTeclado\n"
                                  "  mov esi,entrada\n"
                                  "  call process_entrada \n"
                                  "  mov [rsp + %d], rcx\n";
+/*
+ * Funcion: Funcion que genera el string para leer un input y asignarlo a una variable.
+ * @param literal: Valor del stack donde estará esta variable
+ * @return El string formateado
+*/
 char *read_old_id(int position)
 {
     int stack_position = position;
@@ -750,7 +997,13 @@ char *read_old_id(int position)
     return formatted_string;
 }
 
-
+/*
+ * Funcion: Funcion que genera el el codigo en asm para leer un id de un input.
+ * @param file_asm: Filestream donde se está escribiendo el código
+ * @param pos_id: Posicion relativa del stack, de donde se introducira el valor de la variable
+ * @symbols: Tabla de simbolos
+ * @var_name : Nombre de la variable a leer
+*/
 void generate_read_id(FILE *file_asm, int pos_id, struct symbol_table *symbols, char *var_name)
 {
 
@@ -766,7 +1019,12 @@ void generate_read_id(FILE *file_asm, int pos_id, struct symbol_table *symbols, 
     }
 }
 
-
+/*
+ * Funcion: Funcion que procesa una lista de ids desde el arbol ast
+ * @param ast_node: Nodo del arbol
+ * @param file_asm: Filestream donde se escribe el codigo
+ * @symbols: Tabla de simbolos
+*/
 void process_id_list(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_table *symbols)
 {
     if (!(ast_Node->type == ID_AST))
@@ -795,6 +1053,12 @@ void process_id_list(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_tab
 }
 
 
+/*
+ * Funcion: Funcion que procesa un statement de lectura
+ * @param ast_node: Nodo del arbol
+ * @param file_asm: Filestream donde se escribe el codigo
+ * @symbols: Tabla de simbolos
+*/
 void process_read_statement(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_table *symbols)
 {
 
@@ -809,6 +1073,13 @@ void process_read_statement(struct NodeAST *ast_Node, FILE *file_asm, struct sym
 }
 
 
+/*
+ * Funcion: Funcion que procesa un primary
+ * @param ast_node: Nodo del arbol
+ * @param file_asm: Filestream donde se escribe el codigo
+ * @symbols: Tabla de simbolos
+ * @return El record semantico con la posición del valor obtenido del primary
+*/
 struct SemanticRecord *process_primary(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_table *symbols)
 {
     struct SemanticRecord *record;
@@ -850,6 +1121,13 @@ struct SemanticRecord *process_primary(struct NodeAST *ast_Node, FILE *file_asm,
 }
 
 
+/*
+ * Funcion: Funcion que procesa una expresion
+ * @param ast_node: Nodo del arbol
+ * @param file_asm: Filestream donde se escribe el codigo
+ * @symbols: Tabla de simbolos
+ * @return El record semantico con la posición del valor obtenido de la expresion
+*/
 struct SemanticRecord *process_expression(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_table *symbols)
 {
     if (!(ast_Node->type == EXPRESSION_AST))
@@ -883,7 +1161,11 @@ struct SemanticRecord *process_expression(struct NodeAST *ast_Node, FILE *file_a
     return actual_record;
 }
 
-
+/*
+ * Funcion: Funcion que convierte un entero a un string
+ * @param num: El entero a convertir
+ * @return el puntero al string creado
+*/
 char *int_to_string(int num)
 {
     int length = snprintf(NULL, 0, "%d", num);
@@ -900,6 +1182,12 @@ char *int_to_string(int num)
 }
 
 const char *mov_stack_to_ebx_string = "     mov rbx, qword [rsp + %d] \n";
+
+/*
+ * Funcion: Funcion que genera el string para mover un valor del stack al registro ebx.
+ * @param position: Valor del stack donde estará esta variable
+ * @return El string formateado
+*/
 char *mov_stack_to_ebx(int position)
 {
     int stack_position = position;
@@ -918,6 +1206,11 @@ char *mov_stack_to_ebx(int position)
 }
 
 const char *mov_int_to_ebx_string = "   mov rbx, %d \n ";
+/*
+ * Funcion: Funcion que genera el string para mover un valor entero al registro ebx.
+ * @param position: Valor entero
+ * @return El string formateado
+*/
 char *mov_int_to_ebx(int position)
 {
 
@@ -934,6 +1227,12 @@ char *mov_int_to_ebx(int position)
 }
 
 const char *mov_int_to_ecx_string = "   mov rcx, %d \n ";
+
+/*
+ * Funcion: Funcion que genera el string para mover un valor entero al registro ecx.
+ * @param position: Valor entero
+ * @return El string formateado
+*/
 char *mov_int_to_ecx(int position)
 {
 
@@ -950,6 +1249,11 @@ char *mov_int_to_ecx(int position)
 }
 
 const char *get_temp_string = "TEMP&%d";
+/*
+ * Funcion: Funcion que genera para dar un nombre a un valor temporal
+ * @param position: position relativa del stack
+ * @return El string formateado
+*/
 char *get_temp_name(int stack_position)
 {
     int temp = stack_position;
@@ -968,6 +1272,11 @@ char *get_temp_name(int stack_position)
 
 
 const char *mov_stack_to_ecx_string = "     mov rcx, qword [rsp + %d] \n";
+/*
+ * Funcion: Funcion que genera el string para mover un valor del stack al registro ecx.
+ * @param position: Valor entero
+ * @return El string formateado
+*/
 char *mov_stack_to_ecx(int position)
 {
     int stack_position = position;
@@ -983,7 +1292,13 @@ char *mov_stack_to_ecx(int position)
 
     return formatted_string;
 }
-
+/*
+ * Funcion: Función que procesa 2 records semánticos y genera el código para operarlos
+ * @param first_record: Primer record a procesar
+ * @param operation_sign: Enum de suma o resta, con el cual se decide que operación generar.
+ * @param second_record: Segundo record a procesar 
+ * @return SemanticRecord: recordSemántico con la posición de donde quedó el resultado de la operación en el stack.
+*/
 struct SemanticRecord *genInfix(struct SemanticRecord *first_record, enum ASTNodeType operation_sign, struct SemanticRecord *second_record, FILE *file, struct symbol_table *symbols)
 {
 
@@ -1046,6 +1361,11 @@ const char *write_literal_string = "    mov edi, numero\n"
                                    "    mov rax, %d\n"
                                    "    call print_number\n";
 
+/*
+ * Funcion: Funcion que genera el string para imprimir un literal en pantalla.
+ * @param position: Valor entero a imprimir
+ * @return El string formateado
+*/
 char *write_literal(int literal)
 {
 
@@ -1069,7 +1389,11 @@ const char *write_id_string = "     mov edi, numero\n"
                               "     rep stosb\n"
                               "     mov rax, [rsp + %d]\n"
                               "     call print_number\n";
-
+/*
+ * Funcion: Funcion que genera el string para imprimir un id en pantalla.
+ * @param position: Posicion en el stack
+ * @return El string formateado
+*/
 char *write_id(int position)
 {
     int length = snprintf(NULL, 0, write_id_string, position) + 1;
@@ -1084,7 +1408,13 @@ char *write_id(int position)
 
     return formatted_string;
 }
+/*
+ * Funcion: Funcion que hace el procesamiento para imprimir un valor en pantalla
+ * @param file_asm: Filestream del archivo en asm
+ * @param symbols : Tabla de simbolos
+ * @param semantic_record: Record semantico con la informacion a escribir
 
+*/
 void write_on_screen(FILE *file_asm, struct symbol_table *symbols, struct SemanticRecord *semanticRecord)
 {
     if (semanticRecord->semantic_record = LITERAL_SEMANTIC)
@@ -1099,6 +1429,13 @@ void write_on_screen(FILE *file_asm, struct symbol_table *symbols, struct Semant
     }
 }
 
+/*
+ * Funcion: Funcion que hace el procesamiento para un lista de expresion lista
+ * @param ast_Node: Nodo ast con la informacion de la expresion
+ * @param symbols: Tabla de simbolos
+ * @param file_Asm : Filestream del codigo a escribir
+
+*/
 void process_expression_list(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_table *symbols)
 {
     if (!ast_Node->type == EXPRESSION_LIST_AST)
@@ -1120,7 +1457,12 @@ void process_expression_list(struct NodeAST *ast_Node, FILE *file_asm, struct sy
         next_expression = next_expression->next;
     }
 }
-
+/*
+ * Funcion: Funcion que hace el procesamiento para un statemetn de escritura 
+ * @param ast_Node: Nodo ast con la informacion de la expresion
+ * @param symbols: Tabla de simbolos
+ * @param file_Asm : Filestream del codigo a escribir
+*/
 void process_write_statement(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_table *symbols)
 {
     if (ast_Node->next->type != EXPRESSION_LIST_AST)
@@ -1130,7 +1472,12 @@ void process_write_statement(struct NodeAST *ast_Node, FILE *file_asm, struct sy
     }
     process_expression_list(ast_Node->next, file_asm, symbols);
 }
-
+/*
+ * Funcion: Funcion que hace el procesamiento para un statement
+ * @param ast_Node: Nodo ast con la informacion de la expresion
+ * @param symbols: Tabla de simbolos
+  * @param file_Asm : Filestream del codigo a escribir
+*/
 void process_statement(struct NodeAST *statement, FILE *file_asm, struct symbol_table *symbols)
 {
     enum ASTNodeType first_token = statement->children->start->type;
@@ -1150,7 +1497,12 @@ void process_statement(struct NodeAST *statement, FILE *file_asm, struct symbol_
         break;
     }
 }
-
+/*
+ * Funcion: Funcion que hace el procesamiento para una lista de statement
+ * @param ast_Node: Nodo ast con la informacion de la expresion
+ * @param symbols: Tabla de simbolos
+ * @param file_Asm : Filestream del codigo a escribir
+*/
 void process_statement_list(FILE *file_asm, struct NodeAST *ast_Tree, struct symbol_table *symbols)
 {
     struct NodeAST *statement_temp = ast_Tree->children->start;
@@ -1161,7 +1513,10 @@ void process_statement_list(FILE *file_asm, struct NodeAST *ast_Tree, struct sym
         statement_temp = statement_temp->next;
     }
 }
-
+/*
+ * Funcion: Funcion que inicia la traduccion del arbol ast a codigo ensamblador
+ * @param ast_Tree: arbol ast del codigo de input
+*/
 void translator(struct NodeAST *ast_Tree)
 {
     struct symbol_table *symbols = create_symbol_table();
