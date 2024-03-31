@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+// Enumeracion de los tipos de tokens
 enum TokenType
 {
     BEGIN_SYM,
@@ -23,6 +25,7 @@ enum TokenType
     ERROR_LEX
 };
 
+// Estructura de un nodo del arbol trie
 struct trie_node
 {
     char letter;
@@ -32,15 +35,17 @@ struct trie_node
     enum TokenType tokenType;
 };
 
+// Estructura de la lista de hijos de un nodo
 struct linked_list
 {
     struct trie_node *start;
 };
 
+// Estructura de la tabla de simbolos
 struct symbol_table
 {
     struct trie_node *root;
-    int max_i;
+    int max_i; // Cantidad de simbolos ingresados
 };
 
 struct trie_node *create_trie_node(char letter);
