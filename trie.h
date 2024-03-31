@@ -23,47 +23,47 @@ enum TokenType
     ERROR_LEX
 };
 
-struct trie_node {
+struct trie_node
+{
     char letter;
-    struct linked_list* children;
-    struct trie_node* next;
+    struct linked_list *children;
+    struct trie_node *next;
     int is_end_of_word;
     enum TokenType tokenType;
 };
 
-
-struct linked_list {
-    struct trie_node* start;
+struct linked_list
+{
+    struct trie_node *start;
 };
 
-struct symbol_table {
-    struct trie_node* root;
+struct symbol_table
+{
+    struct trie_node *root;
     int max_i;
 };
 
+struct trie_node *create_trie_node(char letter);
 
-struct trie_node* create_trie_node(char letter);
+struct linked_list *create_linked_list();
 
-struct linked_list* create_linked_list();
+struct trie_node *find_letter_on_list(struct linked_list *list, char letter);
 
-struct trie_node* find_letter_on_list(struct linked_list* list, char letter);
+struct trie_node *add_letter_to_list(struct linked_list *list, char letter);
 
-struct trie_node* add_letter_to_list(struct linked_list* list, char letter);
+void insert_word(struct trie_node *root, char *word, enum TokenType tokenType);
 
-void insert_word(struct trie_node* root, char* word, enum TokenType tokenType);
+enum TokenType find_word(struct trie_node *root, char *word);
 
-enum TokenType find_word(struct trie_node* root, char* word);
+void print_trie(struct trie_node *root, int level);
 
-void print_trie(struct trie_node* root, int level);
+struct trie_node *create_symbol_node(char letter);
 
+struct symbol_table *create_symbol_table();
 
-struct trie_node* create_symbol_node(char letter);
+void insert_symbol(struct symbol_table *table, char *word, int num);
 
-struct symbol_table* create_symbol_table();
-
-void insert_symbol(struct symbol_table* table, char* word, int num);
-
-int find_symbol(struct symbol_table* table, char* word);
-struct trie_node* add_letter_to_table(struct linked_list* list, char letter);
+int find_symbol(struct symbol_table *table, char *word);
+struct trie_node *add_letter_to_table(struct linked_list *list, char letter);
 
 #endif
