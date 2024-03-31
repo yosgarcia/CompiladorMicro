@@ -15,8 +15,8 @@ struct double_linked_list *create_double_linked_list()
 }
 
 /*
- * Funcion: Agregar un nodo a la lista doblemente enlazada
- * @param list: Lista a la que se le agregara el nodo
+ * Función: Agregar un nodo a la lista doblemente enlazada
+ * @param list: Lista a la que se le agregará el nodo
  * @param content: Contenido del nodo
  * @return list: Lista con el nodo agregado
 */
@@ -49,7 +49,7 @@ struct double_linked_list *add_node_to_list(struct double_linked_list *list, str
 
 
 /*
- * Funcion: Eliminar el primer nodo de la lista doblemente enlazada
+ * Función: Eliminar el primer nodo de la lista doblemente enlazada
  * @param list: Lista a la que se le eliminara el nodo
  * @return list: Lista con el nodo eliminado
 */
@@ -79,7 +79,7 @@ struct double_linked_list *remove_start_list(struct double_linked_list *list)
 
 
 /*
- * Funcion: Crear un nodo de contenido
+ * Función: Crear un nodo de contenido
  * @param token: Tipo token del nodo
  * @param lexema: Lexema del nodo
  * @return new_content: Nodo de contenido creado

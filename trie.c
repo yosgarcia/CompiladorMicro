@@ -3,7 +3,7 @@
 #include "trie.h"
 
 /*
- * Funcion: Crear los nodos del arbol trie
+ * Función: Crear los nodos del arbol trie
  * @param letter: Letra que contiene el nodo
  * @return new_node: Nodo creado
  */
@@ -19,7 +19,7 @@ struct trie_node *create_trie_node(char letter)
 }
 
 /*
- * Funcion: Crear la lista los hijos de un nodo
+ * Función: Crear la lista los hijos de un nodo
  * @return new_list: Lista de hijos creada
  */
 struct linked_list *create_linked_list()
@@ -31,7 +31,7 @@ struct linked_list *create_linked_list()
 
 
 /*
- * Funcion: Buscar un nodo en la lista de hijos
+ * Función: Buscar un nodo en la lista de hijos
  * @param list: Lista de hijos
  * @param letter: Letra a buscar
  * @return current: Nodo encontrado en la lista
@@ -52,7 +52,7 @@ struct trie_node *find_letter_on_list(struct linked_list *list, char letter)
 
 
 /*
- * Funcion: Agregar un nodo a la lista de hijos
+ * Función: Agregar un nodo a la lista de hijos
  * @param list: Lista de hijos
  * @param letter: Letra a agregar
  * @return new_node: Nodo agregado
@@ -79,9 +79,9 @@ struct trie_node *add_letter_to_list(struct linked_list *list, char letter)
 
 
 /*
- * Funcion: Insertar una palabra en el arbol trie
- * @param root: Raiz del arbol
- * @param word: Palabra a insertar en el arbol
+ * Función: Insertar una palabra en el árbol trie
+ * @param root: Raíz del árbol
+ * @param word: Palabra a insertar en el árbol
  * @param tokenType: Tipo de token de la palabra
  */
 void insert_word(struct trie_node *root, char *word, enum TokenType tokenType)
@@ -111,9 +111,9 @@ void insert_word(struct trie_node *root, char *word, enum TokenType tokenType)
 
 
 /*
- * Funcion: Buscar una palabra en el arbol trie
- * @param root: Raiz del arbol
- * @param word: Palabra a buscar en el arbol
+ * Funcion: Buscar una palabra en el árbol trie
+ * @param root: Raíz del árbol
+ * @param word: Palabra a buscar en el árbol
  * @return tokenType: Tipo de token de la palabra
  */
 enum TokenType find_word(struct trie_node *root, char *word)
@@ -136,9 +136,9 @@ enum TokenType find_word(struct trie_node *root, char *word)
 }
 
 /*
- * Funcion: Imprimir el arbol trie
- * @param root: Raiz del arbol
- * @param level: Nivel actual del arbol
+ * Funcion: Imprimir el árbol trie
+ * @param root: Raíz del árbol
+ * @param level: Nivel actual del árbol
  */
 void print_trie(struct trie_node *root, int level)
 {
@@ -167,10 +167,10 @@ void print_trie(struct trie_node *root, int level)
 }
 
 
-// <------- Funciones para la tabla de simbolos -------->
+// <------- Funciones para la tabla de símbolos -------->
 
 /*
- * Funcion: Crear los nodos de la tabla de simbolos
+ * Función: Crear los nodos de la tabla de símbolos
  * @param letter: Letra que contiene el nodo
  * @return new_node: Nodo creado   
 */
@@ -185,13 +185,13 @@ struct trie_node *create_symbol_node(char letter)
 }
 
 /*
- * Funcion: Crear la tabla de simbolos
- * @return new_table: Tabla de simbolos creada
+ * Función: Crear la tabla de símbolos
+ * @return new_table: Tabla de símbolos creada
  */
 struct symbol_table *create_symbol_table()
 {
     struct symbol_table *new_table = calloc(1, sizeof(struct symbol_table));
-    new_table->root = create_symbol_node(' '); // La raiz siempre es vacia
+    new_table->root = create_symbol_node(' '); // La raíz siempre es vacía
     new_table->max_i = -1;
     return new_table;
 }
@@ -223,15 +223,15 @@ struct trie_node *add_letter_to_table(struct linked_list *list, char letter)
 }
 
 /*
- * Funcion: Insertar un simbolo en la tabla de simbolos
- * @param table: Tabla de simbolos
- * @param word: Simbolo a insertar
- * @param num: Numero del simbolo
+ * Funcion: Insertar un símbolo en la tabla de símbolos
+ * @param table: Tabla de símbolos
+ * @param word: Símbolo a insertar
+ * @param num: Número del símbolo
  */
 void insert_symbol(struct symbol_table *table, char *word, int num)
 {
     struct trie_node *current = table->root;
-    // Iteramos por cada una de las letras del simbolo
+    // Iteramos por cada una de las letras del símbolo
     for (int i = 0; word[i] != '\0'; i++)
     {
         if (current->children == NULL)
@@ -247,13 +247,13 @@ void insert_symbol(struct symbol_table *table, char *word, int num)
         current = letter;
     }
     current->is_end_of_word = num;
-    table->max_i += 1; // Aumentamos el contador de simbolos que se han insertado
+    table->max_i += 1; // Aumentamos el contador de símbolos que se han insertado
 }
 
 
 /*
  * Funcion: Imprimir la tabla de simbolos
- * @param table: Tabla de simbolos
+ * @param table: Tabla de símbolos
  * @param level: Palabra a encontra en la tabla
  */
 int find_symbol(struct symbol_table *table, char *word)

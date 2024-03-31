@@ -4,7 +4,7 @@
 
 
 /*
- * Funcion: Crear la lista de hijos de un nodo para el AST
+ * Función: Crear la lista de hijos de un nodo para el AST
  * @return new_list: Lista de hijos creada
 */
 struct children_node_ast *create_children_list()
@@ -15,7 +15,7 @@ struct children_node_ast *create_children_list()
 }
 
 /*
- * Funcion: Crear un nodo del AST 
+ * Función: Crear un nodo del AST 
  * @param type: Tipo de nodo
  * @param lexema: Lexema del nodo
  * @return new_node: Nodo creado
@@ -31,7 +31,7 @@ struct NodeAST *create_ast_node(enum ASTNodeType type, char *lexema)
 }
 
 /*
- * Funcion: Agregar un hijo a un nodo del AST
+ * Función: Agregar un hijo a un nodo del AST
  * @param parent: Nodo padre
  * @param child: Nodo hijo
 */
@@ -58,7 +58,7 @@ void add_child(struct NodeAST *parent, struct NodeAST *child)
 
 
 /*
- * Funcion: Crear un nodo y agregarlo como hijo de otro nodo
+ * Función: Crear un nodo y agregarlo como hijo de otro nodo
  * @param type: Tipo de nodo
  * @param lexema: Lexema del nodo a crear
  * @param parent: Nodo padre
@@ -73,7 +73,7 @@ struct NodeAST *create_and_add_node(enum ASTNodeType type, char *lexema, struct 
 }
 
 /*
- * Funcion: Imprimir el arbol AST
+ * Función: Imprimir el arbol AST
  * @param root: Nodo raiz del arbol
  * @param depth: Profundidad actual del nodo
 */
