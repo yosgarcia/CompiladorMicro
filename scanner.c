@@ -561,35 +561,165 @@ int get_temp_int(){
 
 void gen_prefix(FILE* file_asm){
      const char *prefix = 
+"%macro change 2\n"
+"mov edi, %2\n"
+"mov rax, %1\n"
+"mov ebx, 10\n"
+"xor ecx, ecx\n"              
+"call repeat\n"
+"mov byte [edi], 0  \n"
+"%endmacro\n"
      "%macro imprimeEnPantalla 2\n"
-        "   mov     eax, 4         \n"
-        "   mov     ebx, 1            \n"
-        "   mov     ecx, %1               \n"
-        "   mov     edx, %2                \n"
+        "   mov     eax, 4\n"
+        "   mov     ebx, 1\n"
+        "   mov     ecx, %1\n"
+        "   mov     edx, %2\n"
         "   int     0x80\n"
         "%endmacro\n"
-       
+         " %macro leeTeclado 0\n"
+              "  mov     eax,     3\n"
+             "   mov     ebx,     0\n"
+            "    mov     ecx,     entrada\n"
+           "     mov     edx,     100\n"
+          "      int     0x80\n"
+     "   %endmacro\n"
 "%macro suma 2\n"
-    "   mov rax, %1      ; Mueve el primer argumento a eax\n"
-    "   add rax, %2      ; Suma el segundo argumento a eax\n"
+    "   mov rax, %1\n"
+    "   add rax, %2\n"
 "%endmacro\n"
-
-
 "%macro resta 2\n"
-  "  mov rax, %1      ; Mueve el primer argumento a eax\n"
-   " sub rax, %2      ; Resta el segundo argumento a eax\n"
+  "  mov rax, %1\n"
+   " sub rax, %2\n"
 "%endmacro\n"
-     "section .data\n"
-    "   msg db \"Input value: \", 0\n"
-    "   msglen equ $ - msg\n"
-        "section .text\n"
-        "   global _start\n"
-        "_start:\n";
+"%macro jumpline 0\n"
+  "mov eax, 4\n"
+ "mov ebx, 1\n"
+  "mov ecx, newline\n"
+ "mov edx, lngnewline\n"
+ "int 0x80\n"
+"%endmacro\n";
+const char *prefix2="section .bss\n"
+"numero resb 22\n"
+"entrada resb 100\n"
+"section .data\n"
+"msgError db \"Not a number\", 0\n"
+"msgErrorlen equ $ - msgError\n"
+"msg db \"-\", 0\n"
+"msglen equ $ - msg\n"
+"newline db 10\n"
+"lngnewline equ $-newline\n"
+"section .text\n"
+"global _start\n"
+"process_entrada:\n"
+"mov rbx, 0\n"
+"mov rdx,0\n"
+"mov rax,0\n"
+"mov rcx,0\n"
+"mov r9,0\n"
+"mov r8,0\n"
+"mov al,[esi]\n"
+"cmp al,45\n"
+"je entrada_negativa\n"
+"mov rax, 66\n"
+"push rax\n";
+const char *prefix3=
+"jmp iterate_entrada\n"	
+"entrada_negativa:\n"
+"mov rax, 67\n"
+"push rax\n"
+"inc esi\n"	
+" iterate_entrada:\n"
+"mov rax,0\n"
+"mov al, [esi]\n"
+" test al,al\n"
+"jz endloop\n"
+"cmp al,10\n"
+"je endloop\n"
+"cmp al,48\n"
+"jl imprimir_error_entrada\n"
+"cmp al, 57\n"
+"jg imprimir_error_entrada\n"
+"sub rax, 48\n";
+const char *prefix4=
+"push rax ; el numero actual esta en la pila\n"
+"mov rax, rcx ;rcx es el atentior\n"
+"mov rbx,10 ; multiplico el numero anterior en rax por 10, queda en rdx\n"
+"mul rbx\n"
+"mov rcx, rax\n"
+"pop rax \n"
+"add rcx, rax\n"	
+"inc esi\n"
+"jmp iterate_entrada\n"
+"endloop:\n"
+"pop rax\n"
+"cmp rax,67\n"
+"jne no_negativo\n"
+"mov rax, 0\n"
+"sub rax, rcx\n"
+"mov rcx, rax\n"
+"no_negativo:\n"
+"ret\n"	
+"imprimir_error_entrada:\n"
+"imprimeEnPantalla msgError,msgErrorlen\n"
+"jumpline\n"
+"jmp exit\n"
+"print_number:\n"
+    "cmp rax, 0\n"
+    "jl negative\n"
+    "change rax, numero\n"
+    "call print\n"
+    "ret\n"
+"negative:\n"
+    "push rax\n"
+    "mov eax, 4\n"
+    "mov ebx, 1\n"
+    "mov ecx, msg\n"
+    "mov edx, msglen\n"
+    "int 0x80\n"
+    "pop rax\n"
+    "mov ebx, 0\n"
+    "sub rbx, rax\n"
+    "mov rax, rbx\n"
+    "change rbx, numero\n"
+    "call print\n"
+    "ret\n"
+"print:\n"
+    "mov eax, 4\n"
+    "mov ebx, 1\n"
+    "mov ecx, numero\n"
+    "mov edx, 22\n"
+    "int 0x80\n"
+    "jumpline\n"
+    "ret\n"
+"repeat:\n"
+    "xor edx, edx\n"
+    "div ebx\n"
+    "add dl, '0'\n"
+    "push dx\n"
+    "inc ecx\n"
+    "test rax, rax\n"
+    "jnz repeat\n"
+    "jmp pop_chars\n"
+"pop_chars:\n"
+    "pop dx\n"
+    "mov [edi], dl\n"
+    "inc edi\n"
+    "loop pop_chars\n"
+    "ret\n"
+"_start:\n";
+
         
         fputs(prefix,file_asm);
+                
+         fputs(prefix2,file_asm);
+           
+          fputs(prefix3,file_asm);    
+           fputs(prefix4,file_asm);
+              
 }
 void gen_sufix(FILE* file_asm){
        const char *sufix = 
+       "exit:\n "
      "mov eax,1\n"
      "mov ebx, 0\n"
      "int 80h\n";
@@ -777,10 +907,47 @@ int process_id_primary( char* var_name ,struct symbol_table* symbols){
 void read_id(){
 
 }
-void generate_read_id (FILE* file_asm,int pos_id){
+const char* read_new_id_string ="leeTeclado\n"
+	"mov esi,entrada\n"
+	"call process_entrada \n "
+    "push rcx\n";
+ 
+const char* read_old_id_string ="leeTeclado\n"
+	"mov esi,entrada\n"
+	"call process_entrada \n "
+    "mov [rsp + %d], rcx\n";
+ char* read_old_id(int position){
+    int stack_position= position;
+    int length = snprintf(NULL, 0, read_old_id_string, stack_position) + 1;
 
-    //POR IMPLEMENTAR
-    printf("POR IMPLEMENTAR \n");
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, read_old_id_string, stack_position);
+
+    return formatted_string;
+}
+
+void generate_read_id (FILE* file_asm,int pos_id,struct symbol_table* symbols,char* var_name){
+   
+    if (pos_id=-1)
+    {
+        insert_symbol(symbols,var_name,get_temp_int());
+        fputs(read_new_id_string,file_asm);
+    }
+    else   {
+        int stack_pos=get_stack_pos(symbols,pos_id);
+        fputs(read_old_id(stack_pos),file_asm);
+
+        //Generar codigo de guardar el nuevo valor que esta en rcx en la pos vieja
+    }
+    
+    
 
 }
 void process_id_list( struct NodeAST* ast_Node, FILE* file_asm
@@ -796,8 +963,9 @@ void process_id_list( struct NodeAST* ast_Node, FILE* file_asm
         perror("UNKNOWN ERROR\n");
         
     }
+    
   
-    generate_read_id(file_asm,var_id);
+    generate_read_id(file_asm,var_id,symbols,ast_Node->lexema);
 
     struct NodeAST* next_id = ast_Node->next;
 
@@ -806,7 +974,7 @@ void process_id_list( struct NodeAST* ast_Node, FILE* file_asm
     {
         
         var_id = process_id(next_id->lexema,symbols);
-        generate_read_id(file_asm,var_id);
+        generate_read_id(file_asm,var_id,symbols,ast_Node->lexema);
        
 
         next_id = next_id->next;
@@ -1109,7 +1277,64 @@ struct SemanticRecord* genInfix(struct SemanticRecord* first_record,enum  ASTNod
   return NULL;
 
 }
+const char* write_literal_string = "mov edi, numero\n"
+    "mov ecx, 22\n"
+    "xor al, al\n"
+    "rep stosb\n"
+    "mov rax, %d\n"
+    "call print_number\n"; 
+ char* write_literal(int literal){
+    
+    int length = snprintf(NULL, 0, write_literal_string, literal) + 1;
 
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+    // Format the string
+    snprintf(formatted_string, length, write_literal_string, literal);
+
+    return formatted_string;
+}
+const char* write_id_string = "mov edi, numero\n"
+    "mov ecx, 22\n"
+    "xor al, al\n"
+    "rep stosb\n"
+    "mov rax, [rsp + %d]\n"
+    "call print_number\n"; 
+ char* write_id(int position){
+    //Position in the stack
+    int length = snprintf(NULL, 0, write_id_string, position) + 1;
+
+    
+    char* formatted_string = (char*)calloc(length, sizeof(char));
+    if (formatted_string == NULL) {
+       
+        return NULL;
+    }
+
+   
+    snprintf(formatted_string, length, write_id_string, position);
+
+    return formatted_string;
+}
+void write_on_screen(FILE* file_asm, struct symbol_table* symbols, struct SemanticRecord* semanticRecord){
+    if (semanticRecord->semantic_record=LITERAL_SEMANTIC)
+    {
+        fputs(write_literal(semanticRecord->semantic_info),file_asm);
+    }
+    else   {
+        
+        int stack_position= get_stack_pos(symbols,semanticRecord->semantic_info);
+     
+        fputs(write_id(stack_position),file_asm);
+
+    }
+    
+}
 void process_expression_list(struct NodeAST* ast_Node, FILE* file_asm
 ,struct symbol_table* symbols){
      if (!ast_Node->type== EXPRESSION_LIST_AST)
@@ -1118,18 +1343,18 @@ void process_expression_list(struct NodeAST* ast_Node, FILE* file_asm
         return;
     }
 
-    process_expression(ast_Node->children->start,file_asm,symbols);
-    //WRITE EXPRESSION
+    struct SemanticRecord* record_to_write = process_expression(ast_Node->children->start,file_asm,symbols);
+    write_on_screen(file_asm, symbols, record_to_write);
 
 
-     struct NodeAST* next_expression = ast_Node->next;
+     struct NodeAST* next_expression = ast_Node->children->start->next;
 
     while (next_expression)
     {
-        process_expression(ast_Node->children->start,file_asm,symbols);
-        //write expression
+         record_to_write = process_expression(next_expression,file_asm,symbols);
+        write_on_screen(file_asm, symbols, record_to_write);
 
-        struct NodeAST* next_expression = next_expression->next;
+        next_expression = next_expression->next;
     }
 
 
@@ -1194,7 +1419,9 @@ void translator (struct NodeAST* ast_Tree){
         perror("Error opening file \n");
         return 1;
     }
+    
     gen_prefix(file_asm);
+
     process_statement_list(file_asm,ast_Tree,symbols);
    
     gen_sufix(file_asm);

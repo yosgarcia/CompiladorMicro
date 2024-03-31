@@ -3,6 +3,7 @@ begin
     b := 5;
     cc  := a + (b-2);
     p :=a-5;
+    read(a);
     write(cc,a+4);
    
  end
