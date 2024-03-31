@@ -3,64 +3,12 @@
 #include <ctype.h>
 #include <string.h>
 #include "trie.h"
+#include "ast.h"
+#include "content.h"
 
 #define MAX_WORD_SIZE 32
 
-/*
-enum TokenType
-{
-    BEGIN_SYM,
-    END_SYM,
-    READ_SYM,
-    WRITE_SYM,
-    ID,
-    INT_LITERAL,
-    LPAREN,
-    RPAREN,
-    SEMI_COLON,
-    COMMA,
-    ASSIGN_OP,
-    PLUS_OP,
-    MINUS_OP,
-    EOF_SYM,
-    NULL_TOKEN,
-    ERROR_LEX
-};
 
-*/
-
-enum ASTNodeType
-{
-    PROGRAM_AST,
-    STATEMENT_LIST_AST,
-    STATEMENT_AST,
-    EXPRESSION_AST,
-    PRIMARY_AST,
-    EXPRESSION_LIST_AST,
-    ID_LIST_AST,
-    PLUS_OP_AST,
-    MINUS_OP_AST,
-    ASSIGN_OP_AST,
-    READ_SYM_AST,
-    WRITE_SYM_AST,
-    ID_AST,
-    INT_LITERAL_AST,
-    ADD_OP_AST
-};
-
-struct NodeAST
-{
-    struct NodeAST *parent;
-    enum ASTNodeType type;
-    char *lexema;
-    struct children_node_ast *children;
-    struct NodeAST *next;
-};
-
-struct children_node_ast
-{
-    struct NodeAST *start;
-};
 
 enum SemanticToken
 {
@@ -74,23 +22,7 @@ struct SemanticRecord
     enum SemanticToken semantic_record;
     int semantic_info;
 };
-struct content
-{
-    enum TokenType token;
-    char *lexema;
-};
 
-struct double_node
-{
-    struct content *content;
-    struct double_node *next;
-    struct double_node *prev;
-};
-
-struct double_linked_list
-{
-    struct double_node *start;
-};
 
 struct SemanticRecord *process_expression(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_table *symbols);
 struct SemanticRecord *genInfix(struct SemanticRecord *first_record, enum ASTNodeType operation_sign, struct SemanticRecord *second_record, FILE *file, struct symbol_table *symbols);
@@ -115,85 +47,6 @@ struct SemanticRecord *create_record(enum SemanticToken token, int semantic_info
     return new_record;
 }
 
-struct children_node_ast *create_children_list()
-{
-    struct children_node_ast *new_list = calloc(1, sizeof(struct children_node_ast));
-    new_list->start = NULL;
-    return new_list;
-}
-
-struct NodeAST *create_ast_node(enum ASTNodeType type, char *lexema)
-{
-    struct NodeAST *new_node = calloc(1, sizeof(struct NodeAST));
-    new_node->parent = NULL;
-    new_node->type = type;
-    new_node->lexema = lexema;
-    new_node->children = create_children_list();
-    return new_node;
-}
-
-void add_child(struct NodeAST *parent, struct NodeAST *child)
-{
-    if (parent->children == NULL)
-    {
-        parent->children = create_children_list();
-        parent->children->start = child;
-        return;
-    }
-    if (parent->children->start == NULL)
-    {
-        parent->children->start = child;
-        return;
-    }
-    struct NodeAST *temp = parent->children->start;
-    while (temp->next != NULL)
-    {
-        temp = temp->next;
-    }
-    temp->next = child;
-}
-
-struct NodeAST *create_and_add_node(enum ASTNodeType type, char *lexema, struct NodeAST *parent)
-{
-    struct NodeAST *new_node = create_ast_node(type, lexema);
-    new_node->parent = parent;
-    add_child(parent, new_node);
-    return new_node;
-}
-
-void print_AST_tree(struct NodeAST *root, int depth)
-{
-    if (root == NULL)
-    {
-        return;
-    }
-
-    // Imprime espacios al principio de la línea para indicar la profundidad del nodo
-    for (int i = 0; i < depth; i++)
-    {
-        printf("  ");
-    }
-
-    printf("|___%s\n", root->lexema);
-
-    if (root->children != NULL)
-    {
-        struct NodeAST *current = root->children->start;
-        while (current != NULL)
-        {
-            // Llama a print_AST_tree con depth + 1 para los hijos
-            print_AST_tree(current, depth + 1);
-            current = current->next;
-        }
-    }
-}
-
-struct double_linked_list *create_double_linked_list()
-{
-    struct double_linked_list *new_list = calloc(1, sizeof(struct double_linked_list));
-    new_list->start = NULL;
-    return new_list;
-}
 
 
 int get_stack_pos(struct symbol_table *symbols, int id_var)
@@ -202,70 +55,6 @@ int get_stack_pos(struct symbol_table *symbols, int id_var)
 }
 
 
-struct double_linked_list *add_node_to_list(struct double_linked_list *list, struct content *content)
-{
-
-    struct double_node *temp = list->start;
-    while (temp)
-    {
-        temp = temp->next;
-    }
-
-    struct double_node *new_node = calloc(1, sizeof(struct double_node));
-    new_node->content = content;
-    if (list == NULL)
-    {
-        return NULL;
-    }
-    if (list->start == NULL)
-    {
-        list->start = new_node;
-        return list;
-    }
-
-    struct double_node *current = list->start;
-    while (current->next != NULL)
-    {
-        current = current->next;
-    }
-    current->next = new_node;
-    new_node->prev = current;
-    return list;
-}
-
-struct double_linked_list *remove_start_list(struct double_linked_list *list)
-{
-    if (list == NULL)
-    {
-        return NULL;
-    }
-    if (list->start == NULL)
-    {
-        return list;
-    }
-    if (!list->start->next)
-    {
-        free(list->start);
-        list->start = NULL;
-        return list;
-    }
-
-    struct double_node *temp = list->start;
-    list->start->next->prev = NULL;
-    list->start = list->start->next;
-    free(temp);
-    return list;
-}
-
-struct content *create_content(enum TokenType token, char *lexema)
-{
-    struct content *new_content = calloc(1, sizeof(struct content));
-
-    new_content->token = token;
-    new_content->lexema = strdup(lexema);
-
-    return new_content;
-}
 
 char *char_to_string(char c)
 {
