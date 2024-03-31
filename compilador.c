@@ -273,6 +273,12 @@ void syntax_error(enum TokenType token)
     exit(1);
 }
 
+void semantic_error(char *message)
+{
+    printf("Semantic Error: %s\n", message);
+    exit(1);
+}
+
 /*
  * Funcion: Funcion que añade un token a la lista de tokens
  * @param file: Filestream del archivo con el código micro.
@@ -914,12 +920,12 @@ void process_id_statement(struct NodeAST *ast_Node, FILE *file_asm, struct symbo
 
     if (ast_Node->next->type != ASSIGN_OP_AST)
     {
-        perror("AST TREE DOES NOT FOLLOW CFG RULES.\n Process ID STatement\n");
+        semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
         return;
     }
     if (!ast_Node->next->next)
     {
-        perror("EXPRESSION MISSING AFTER ASSIGN\n");
+        semantic_error("EXPRESSION MISSING AFTER ASSIGN\n");
         return;
     }
 
@@ -960,7 +966,7 @@ int process_id_primary(char *var_name, struct symbol_table *symbols)
     int var_id = find_symbol(symbols, var_name);
     if (var_id == -1)
     {
-        perror("ID has not been define, before its use on a primary expression");
+        semantic_error("ID has not been defined, before its use on a primary expression");
         return -1;
     }
 
@@ -1029,13 +1035,13 @@ void process_id_list(struct NodeAST *ast_Node, FILE *file_asm, struct symbol_tab
 {
     if (!(ast_Node->type == ID_AST))
     {
-        perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS ID LIST");
+        semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
         return;
     }
     int var_id = process_id(ast_Node->lexema, symbols);
     if (var_id == -1)
     {
-        perror("UNKNOWN ERROR\n");
+        semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
     }
 
     generate_read_id(file_asm, var_id, symbols, ast_Node->lexema);
@@ -1065,7 +1071,7 @@ void process_read_statement(struct NodeAST *ast_Node, FILE *file_asm, struct sym
     if (ast_Node->next->type != ID_LIST_AST)
     {
 
-        perror("AST TREE DOES NOT FOLLOW CFG RULES\n READ STATEMENT PROCESS");
+        semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
         return;
     }
 
@@ -1085,7 +1091,7 @@ struct SemanticRecord *process_primary(struct NodeAST *ast_Node, FILE *file_asm,
     struct SemanticRecord *record;
     if (!(ast_Node->type == PRIMARY_AST))
     {
-        perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS PRIMARY");
+        semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
         return NULL;
     }
     enum ASTNodeType primary_type = ast_Node->children->start->type;
@@ -1096,7 +1102,7 @@ struct SemanticRecord *process_primary(struct NodeAST *ast_Node, FILE *file_asm,
         int stack_position = process_id_primary(ast_Node->children->start->lexema, symbols);
         if (stack_position == -1)
         {
-            perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS PRIMARY");
+            semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
             return NULL;
         }
 
@@ -1113,7 +1119,7 @@ struct SemanticRecord *process_primary(struct NodeAST *ast_Node, FILE *file_asm,
         break;
 
     default:
-        perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS PRIMARY DEFAULT SWITCH");
+        semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
         break;
         return NULL;
     }
@@ -1132,7 +1138,7 @@ struct SemanticRecord *process_expression(struct NodeAST *ast_Node, FILE *file_a
 {
     if (!(ast_Node->type == EXPRESSION_AST))
     {
-        perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS EXPRESSION");
+        semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
         return NULL;
     }
     struct SemanticRecord *actual_record = process_primary(ast_Node->children->start, file_asm, symbols);
@@ -1142,14 +1148,14 @@ struct SemanticRecord *process_expression(struct NodeAST *ast_Node, FILE *file_a
         
         if (ast_Node->children->start->next->type != ADD_OP_AST)
         {
-            perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS EXPRESION ADD OP IF");
+            semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
         }
 
         if (ast_Node->children->start->next->next != NULL)
         {
             if (ast_Node->children->start->next->next->type != PRIMARY_AST)
             {
-                perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS EXPRESION NEXT NEXT ADD OP IF");
+                semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
             }
         }
         enum ASTNodeType operation_sign = ast_Node->children->start->next->children->start->type;
@@ -1440,7 +1446,7 @@ void process_expression_list(struct NodeAST *ast_Node, FILE *file_asm, struct sy
 {
     if (!ast_Node->type == EXPRESSION_LIST_AST)
     {
-        perror("AST TREE DOES NOT FOLLOW CFG RULES\n EXPRESSION LIST IF\n ");
+        semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
         return;
     }
 
@@ -1467,7 +1473,7 @@ void process_write_statement(struct NodeAST *ast_Node, FILE *file_asm, struct sy
 {
     if (ast_Node->next->type != EXPRESSION_LIST_AST)
     {
-        perror("AST TREE DOES NOT FOLLOW CFG RULES\n PROCESS WRITE STATEMENT \n");
+        semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
         return;
     }
     process_expression_list(ast_Node->next, file_asm, symbols);
@@ -1493,7 +1499,7 @@ void process_statement(struct NodeAST *statement, FILE *file_asm, struct symbol_
         process_write_statement(statement->children->start, file_asm, symbols);
         break;
     default:
-        perror("AST TREE DOES NOT FOLLOW THE CFG RULES\n PROCESS STATEMENT DEFAULT \n");
+        semantic_error("AST TREE DOES NOT FOLLOW THE CFG RULES");
         break;
     }
 }
@@ -1534,9 +1540,15 @@ void translator(struct NodeAST *ast_Tree)
     gen_sufix(file_asm);
 }
 
-int main()
-{
+int main(int argc, char *argv[])
+{   
 
+    if (argc != 2) {
+        printf("Uso: %s <nombre_archivo>\n", argv[0]);
+        return 1;
+    }
+
+    char *filename = argv[1];
     root = create_trie_node('\0');
     insert_word(root, "begin", BEGIN_SYM);
     insert_word(root, "end", END_SYM);
@@ -1546,7 +1558,7 @@ int main()
     char word[MAX_WORD_SIZE];
     struct content *tokenName;
 
-    file = fopen("input.txt", "r");
+    file = fopen(filename, "r");
     if (file == NULL)
     {
         perror("Error opening file");
@@ -1556,6 +1568,7 @@ int main()
 
     struct NodeAST *ast_Tree = system_goal(file, tokens);
     translator(ast_Tree);
+    printf("Running MICRO program...\n");
     system("nasm -f elf64 asm_code.asm -o asm_code.o");
     system("ld asm_code.o -m elf_x86_64 -o asm_code");
     system("./asm_code");

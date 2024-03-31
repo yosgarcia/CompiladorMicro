@@ -1,0 +1,18 @@
+ifeq ($(LOCATION),)
+$(error PARAM is not set. Please provide a value for PARAM.)
+endif
+CC = gcc
+SRC= compilador.c trie.c ast.c content.c
+OBJ= $(SRC:.c=.o)
+TARGET= programa
+compilar:
+	$(CC) -c $(SRC)
+	$(CC) -o $(TARGET) $(OBJ)
+	
+run: compilar
+	./$(TARGET) $(LOCATION)
+clean:
+	rm -f $(OBJ) $(TARGET)
+run_and_clean: compilar
+	rm -f $(OBJ)
+	./$(TARGET)

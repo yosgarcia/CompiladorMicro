@@ -1,3 +1,0 @@
-gcc -c scanner.c trie.c
-gcc -o programa scanner.o trie.o
-./programa
