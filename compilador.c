@@ -1568,10 +1568,8 @@ int main(int argc, char *argv[])
 
     struct NodeAST *ast_Tree = system_goal(file, tokens);
     translator(ast_Tree);
-    printf("Running MICRO program...\n");
     system("nasm -f elf64 asm_code.asm -o asm_code.o");
     system("ld asm_code.o -m elf_x86_64 -o asm_code");
-    system("./asm_code");
 
     fclose(file);
 

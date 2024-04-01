@@ -16,3 +16,7 @@ clean:
 run_and_clean: compilar
 	rm -f $(OBJ)
 	./$(TARGET)
+
+run_asm: run
+	@echo "\nRunning asm_code..."
+	./asm_code
