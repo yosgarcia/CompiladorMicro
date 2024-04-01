@@ -1,3 +1,15 @@
+/*
+ * Integrantes: - Yosward Garcia Tellez
+ *              - Yarmna Charpentier Castellón
+ * 
+ * Ejecutar el código sin ejecutar el ensamblador:
+ *      make run LOCATION=<nombre del archivo a compilar> -f MakeFile 
+ * Ejecutar el código y ejecutar el ensamblador:
+ *      make run_asm LOCATION=<nombre del archivo a compilar> -f MakeFile
+ * 
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
